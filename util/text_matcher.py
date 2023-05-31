@@ -8,6 +8,7 @@ class TextMatcher:
     See https://en.wikipedia.org/wiki/Levenshtein_distance.
     """
 
+    # Matches alphanumeric strings.
     ALPHANUM_EXP = re.compile("[^A-Za-z0-9]+")
     MatchType = Enum('MatchType', ['BASE_REF', 'SOURCE_REF', 'INDEPENDENT'])
 
