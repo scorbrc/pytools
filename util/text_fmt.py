@@ -3,76 +3,83 @@ from collections import OrderedDict
 import datetime as dt
 from decimal import Decimal
 import io
+from .util_tools import is_num, to_str
 
 
-def is_num(x):
-    """ Return True if 'x' is a number. """
-    try:
-        float(x)
-        return True
-    except Exception:
-        return False
-
-
-def format_text_table(records,
-                      by_rows=False,
-                      by_cols=False,
-                      colnames=None,
-                      digits=3):
+def to_text_cols(records, digits=3, max_len=80, indent=0, colnames=None):
     """
-    Formats one or more 'records' which are dictionaries of names and values,
-    into evenly spaced text table. If 'by_rows' is True then records are laid
-    out in rows. If 'by_col' is True then records are laid out in columns
-    with the first column being the field names. Default is by rows if
-    neither specified. """
+    Formats 'records' into text columns. Records are laid out
+    in columns with the first column being the field name. 'digits'
+    specifies precison for floating or decimal fields. 'max_len' is the
+    maximum length printed for strings. 'indent' will indent the table the
+    specified number of spaces.
+    """
     records = [records] if isinstance(records, dict) else records
-    if not by_rows and not by_cols:
-        by_rows = True
-    cvrecs = []
-    fields = OrderedDict()
+    cv_recs = []
     for rec in records:
-        cvrec = OrderedDict()
-        for fld in rec:
-            fields.setdefault(fld, len(fld))
-            if rec[fld] is not None:
-                if isinstance(rec[fld], str):
-                    cvrec[fld] = rec[fld]
-                elif isinstance(rec[fld], int):
-                    cvrec[fld] = '%d' % rec[fld]
-                elif isinstance(rec[fld], (Decimal, float)):
-                    cvrec[fld] = ('%%.%df' % digits) % rec[fld]
-                elif isinstance(rec[fld], dt.datetime):
-                    cvrec[fld] = rec[fld].strftime('%Y-%m-%dT%H:%M:%S')
-                else:
-                    cvrec[fld] = str(rec[fld])
-            else:
-                cvrec[fld] = ''
-            fields[fld] = max(fields[fld], len(cvrec[fld]))
-        cvrecs.append(cvrec)
+        flds = [(fn, to_str(rec[fn], digits, max_len)) for fn in rec]
+        cv_recs.append(OrderedDict(flds))
     so = io.StringIO()
-    if by_cols:
-        max_len = max(fields.values())
-        for i, fld in enumerate(fields):
-            if i == 0:
-                if colnames is not None and len(colnames) == len(records):
-                    print("%s %s" %
-                          (''.ljust(max_len),
-                           ' '.join([cn.rjust(max_len) for cn in colnames])),
-                          file=so)
-            print("%s %s" %
-                  (fld.ljust(max_len),
-                   ' '.join([cvrec[fld].rjust(max_len) for cvrec in cvrecs])),
-                  file=so)
-    elif by_rows:
-        for i, cvrec in enumerate(cvrecs):
-            if i == 0:
-                print(' '.join([fld.rjust(fields[fld])
-                                if is_num(cvrec[fld])
-                                else fld.ljust(fields[fld])
-                                for fld in fields]), file=so)
+    fn_len = max([len(fn) for fn in cv_recs[0]])
+    col_lens = [max([len(x) for x in cr.values()]) for cr in cv_recs]
+    for i, fn in enumerate(cv_recs[0]):
+        if i == 0:
+            if colnames is not None:
+                print("%s %s" %
+                      (''.ljust(max_len),
+                       ' '.join([cn.rjust(max_len) for cn in colnames])),
+                      file=so)
+        row = [cr[fn].rjust(ln) for ln, cr in zip(col_lens, cv_recs)]
+        print("%s%s %s" %
+              (' '.ljust(indent), fn.ljust(fn_len), ' '.join(row)),
+              file=so)
+    return so.getvalue().rstrip()
 
-            print(' '.join([cvrec[fld].rjust(fields[fld])
-                            if is_num(cvrec[fld])
-                            else cvrec[fld].ljust(fields[fld])
-                            for fld in fields]), file=so)
-    return so.getvalue().strip()
+
+def to_text_rows(records, digits=3, max_len=80, indent=0):
+    """
+    Formats 'records' into evenly spaced text rows. 'digits'
+    specifies precison for floating or decimal fields. 'max_len' is the
+    maximum length printed for strings. 'indent' will indent the table the
+    specified number of spaces.
+    """
+    records = [records] if isinstance(records, dict) else records
+
+    # Convert fields to printable text.
+    cv_recs = []
+    for rec in records:
+        flds = [(fn, to_str(rec[fn], digits, max_len)) for fn in rec]
+        cv_recs.append(OrderedDict(flds))
+
+    # find the max length of each convertedf field.
+    fld_lens = OrderedDict()
+    for cr in cv_recs:
+        for fn, fv in cr.items():
+            try:
+                fld_lens[fn] = max(fld_lens[fn], len(fv))
+            except KeyError:
+                fld_lens[fn] = len(fv)
+
+    # Filter fields with values, length > 0, add in field name max size.
+    fld_lens = OrderedDict(
+        [(fn, max(fl, len(fn))) for fn, fl in fld_lens.items() if fl > 0])
+
+    # Build the report.
+    so = io.StringIO()
+    for i, cr in enumerate(cv_recs):
+        so.write(' ' * indent)
+        if i == 0:
+            for j, fn in enumerate(fld_lens):
+                if j > 0:
+                    so.write(' ')
+                so.write(fn.ljust(fld_lens[fn]))
+            print(file=so)
+        for j, fn in enumerate(fld_lens):
+            if j > 0:
+                so.write(' ')
+            if is_num(cr[fn]):
+                so.write(cr[fn].rjust(fld_lens[fn]))
+            else:
+                so.write(cr[fn].ljust(fld_lens[fn]))
+        print(file=so)
+    return so.getvalue().rstrip()

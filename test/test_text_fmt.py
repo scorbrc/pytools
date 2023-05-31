@@ -1,9 +1,8 @@
 import unittest
 from collections import OrderedDict
 import datetime as dt
-
 import inspect
-from util.text_fmt import format_text_table
+from util.text_fmt import to_text_cols, to_text_rows
 
 
 class TextFmtTest(unittest.TestCase):
@@ -23,7 +22,7 @@ class TextFmtTest(unittest.TestCase):
                             value1=1.23,
                             value2=456,
                             date=dt.datetime.now())]
-        content = format_text_table(recs)
+        content = to_text_rows(recs)
         self.assertEqual(4, len(content.split('\n')), content)
         self.assertEqual(4, len(content.split('\n')[0].split()), content)
 
@@ -42,9 +41,7 @@ class TextFmtTest(unittest.TestCase):
                             value1=1.23,
                             value2=456,
                             date=dt.datetime.now())]
-        content = format_text_table(recs,
-                                    by_cols=True,
-                                    colnames=('1', '2', '3'))
+        content = to_text_cols(recs, colnames=('1', '2', '3'))
         self.assertEqual(5, len(content.split('\n')), content)
         self.assertEqual(3, len(content.split('\n')[0].split()), content)
 

@@ -1,6 +1,7 @@
 """ Utility tools. """
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
+from decimal import Decimal
 from difflib import SequenceMatcher
 from numbers import Number
 import operator
@@ -146,6 +147,23 @@ def to_snake_name(name):
     while '__' in sn_name:
         sn_name = sn_name.replace('__', '_')
     return sn_name
+
+
+def to_str(x, digits=3, max_len=120):
+    """ Convert 'x' to a string, formatted according to its type. """
+    if x is None:
+        return ''
+    if isinstance(x, str):
+        return x[:max_len]
+    if isinstance(x, int):
+        return '%d' % x
+    if isinstance(x, (Decimal, float)):
+        return ('%%.%df' % digits) % x
+    if isinstance(x, datetime):
+        return x.isoformat()
+    if isinstance(x, (OpenRecord, dict, list, tuple, Callable)):
+        return ''
+    return str(x)
 
 
 class NameTransformer():

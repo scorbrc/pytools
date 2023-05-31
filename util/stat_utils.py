@@ -268,6 +268,15 @@ def winsorize(data, wp=.25):
             for i in range(n)]
 
 
+def w_std(data, wp=.2):
+    """
+    Winsoried standard deviation for values in 'data' using proportion 'wp'.
+    """
+    wp = min(max(wp, 0), .33)
+    wx = winsorize(data, wp)
+    return std(wx)
+
+
 def w_stderr(data, wp=.2):
     """
     Winsoried standard error for values in 'data' using proportion 'wp'.

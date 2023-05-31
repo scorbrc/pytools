@@ -1,20 +1,20 @@
 import unittest
 import inspect
+import datetime as dt
 from random import choice, choices, randint, sample
 import string
 from uuid import uuid4
-from util.util_tools (
-    days_from_month,
+from util.util_tools import (
     find_lcs,
     flatten_list,
     get_default,
     is_empty,
     is_list,
     is_num,
-    last_day_in_week,
     NameTransformer,
     to_camel_name,
     to_snake_name,
+    to_str,
     zero_if_none
 )
 
@@ -135,6 +135,16 @@ class UtilToolsTest(unittest.TestCase):
         for _ in range(10000):
             nx.transform(choice(words))
         self.assertEqual(100, len(nx))
+
+    def test_to_str(self):
+        print('-- %s --' % inspect.stack()[0][3])
+        self.assertEqual('1', to_str(1))
+        self.assertEqual('1.2', to_str(1.234, digits=1))
+        self.assertEqual('1.234', to_str(1.234))
+        self.assertEqual('x', to_str('x'))
+        self.assertEqual('', to_str(None))
+        self.assertEqual('2020-01-01T15:30:11',
+                         to_str(dt.datetime(2020, 1, 1, 15, 30, 11)))
 
     def test_zero_if_none(self):
         print('-- %s --' % inspect.stack()[0][3])

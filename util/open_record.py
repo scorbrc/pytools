@@ -11,16 +11,7 @@ import json
 import sys
 import types
 from typing import Callable
-from .text_fmt import format_text_table
-
-
-def is_num(x):
-    """ Returns True if 'x' is a number: float, decimal, int. """
-    try:
-        float(x)
-        return True
-    except BaseException:
-        return False
+from .text_fmt import to_text_cols, to_text_rows
 
 
 def to_safe_json(x):
@@ -34,23 +25,6 @@ def to_safe_json(x):
         return x.isoformat()
     else:
         return x
-
-
-def to_str(x, digits=3, max_len=120):
-    """ Convert 'x' to a string, formatted according to its type. """
-    if x is None:
-        return ''
-    if isinstance(x, str):
-        return x[:max_len]
-    if isinstance(x, int):
-        return '%d' % x
-    if isinstance(x, (Decimal, float)):
-        return ('%%.%df' % digits) % x
-    if isinstance(x, dt.datetime):
-        return x.isoformat()
-    if isinstance(x, (OpenRecord, dict, list, tuple, Callable)):
-        return ''
-    return str(x)
 
 
 class OpenRecord(OrderedDict):
@@ -232,11 +206,6 @@ class OpenRecord(OrderedDict):
                 wrt.writerow([to_str(x) for x in rec.values()])
 
     @classmethod
-    def to_text(cls, records, by_rows=False, by_cols=False, digits=3):
-        return format_text_table(records, by_rows, by_cols, digits=digits);
-
-
-    @classmethod
     def to_text_cols(cls, records, digits=3, max_len=80, indent=0):
         """
         Formats 'records' into text columns. Records are laid out
@@ -245,20 +214,7 @@ class OpenRecord(OrderedDict):
         maximum length printed for strings. 'indent' will indent the table the
         specified number of spaces.
         """
-        records = [records] if isinstance(records, dict) else records
-        cv_recs = []
-        for rec in records:
-            flds = [(fn, to_str(rec[fn], digits, max_len)) for fn in rec]
-            cv_recs.append(OrderedDict(flds))
-        so = io.StringIO()
-        fn_len = max([len(fn) for fn in cv_recs[0]])
-        col_lens = [max([len(x) for x in cr.values()]) for cr in cv_recs]
-        for i, fn in enumerate(cv_recs[0]):
-            row = [cr[fn].rjust(ln) for ln, cr in zip(col_lens, cv_recs)]
-            print("%s%s %s" %
-                  (' '.ljust(indent), fn.ljust(fn_len), ' '.join(row)),
-                  file=so)
-        return so.getvalue().rstrip()
+        return to_text_cols(records, digits, max_len, indent)
 
     @classmethod
     def to_text_rows(cls, records, digits=3, max_len=80, indent=0):
@@ -268,43 +224,4 @@ class OpenRecord(OrderedDict):
         maximum length printed for strings. 'indent' will indent the table the
         specified number of spaces.
         """
-        records = [records] if isinstance(records, dict) else records
-
-        # Convert fields to printable text.
-        cv_recs = []
-        for rec in records:
-            flds = [(fn, to_str(rec[fn], digits, max_len)) for fn in rec]
-            cv_recs.append(OrderedDict(flds))
-
-        # find the max length of each convertedf field.
-        fld_lens = OrderedDict()
-        for cr in cv_recs:
-            for fn, fv in cr.items():
-                try:
-                    fld_lens[fn] = max(fld_lens[fn], len(fv))
-                except KeyError:
-                    fld_lens[fn] = len(fv)
-
-        # Filter fields with values, length > 0, add in field name max size.
-        fld_lens = OrderedDict(
-            [(fn, max(fl, len(fn))) for fn, fl in fld_lens.items() if fl > 0])
-
-        # Build the report.
-        so = io.StringIO()
-        for i, cr in enumerate(cv_recs):
-            so.write(' ' * indent)
-            if i == 0:
-                for j, fn in enumerate(fld_lens):
-                    if j > 0:
-                        so.write(' ')
-                    so.write(fn.ljust(fld_lens[fn]))
-                print(file=so)
-            for j, fn in enumerate(fld_lens):
-                if j > 0:
-                    so.write(' ')
-                if is_num(cr[fn]):
-                    so.write(cr[fn].rjust(fld_lens[fn]))
-                else:
-                    so.write(cr[fn].ljust(fld_lens[fn]))
-            print(file=so)
-        return so.getvalue().rstrip()
+        return to_text_rows(records, digits, max_len, indent)

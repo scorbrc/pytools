@@ -10,6 +10,9 @@ from util.transform import fr_sqrt_trans, to_sqrt_trans
 
 
 def est(data):
+    """
+    Default estimator for values in 'data', returning mean and standard error.
+    """
     mu = mean(data)
     se = stderr(data, mu)
     return mu, se
@@ -17,13 +20,12 @@ def est(data):
 
 def m_est(data, cf=2, pct_imp=.01, max_iters=12):
     """
-    Robust M estimate as a measure of location for 'data'. Outliers are
-    weighted towards the mean using an iterative fitting process.
-    'cf' is the convergence factor that determines how aggressive the
-    weighting is. 'pct_imp' is the percentage improvement needed to continue
-    iteration. Estimation stops once the percentage improvement from the
-    last iteration falls below 'pct_imp'. 'max_iters' is the maximum
-    iterations to attempt. Most estimations are completed in 3-4 iterations.
+    Robust M estimate for values in 'data'. Outliers are weighted towards
+    the mean using an iterative fitting process. 'cf' is the convergence
+    factor that determines how aggressive the weighting is. 'pct_imp' is
+    the percentage improvement needed to continue iteration. Estimation
+    stops once the percentage improvement from the last iteration falls
+    below 'pct_imp'. 'max_iters' is the maximum iterations to attempt.
     Returns M estimate and standard error.
     """
     n = len(data)

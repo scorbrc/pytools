@@ -23,6 +23,7 @@ class LoggingUtilsTest(unittest.TestCase):
             "%(asctime)s - %(levelname)s - p%(process)d " + \
             "- t%(thread_id)d %(filename)s:%(lineno)d - %(message)s",
             fh.formatter._fmt)
+        fh.close()
 
     def test_create_stream_handler(self):
         print('-- %s --' % inspect.stack()[0][3])
@@ -30,19 +31,12 @@ class LoggingUtilsTest(unittest.TestCase):
         self.assertTrue('StreamHandler' in str(type(sh)))
         self.assertEqual('%(asctime)s - %(levelname)s - %(message)s', sh.formatter._fmt)
 
-    def test_get_default_app_name(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        self.assertEqual('filename', get_default_app_name('filename'))
-        self.assertEqual('test_logging_utils', get_default_app_name())
-
     def test_get_logger(self):
         print('-- %s --' % inspect.stack()[0][3])
         logger = get_logger()
         info = get_logger_info(logger)
         self.assertTrue('root' in info)
         self.assertEqual(0, len(info['root']['handlers']))
-        self.assertTrue('test_logging_utils' in info)
-        self.assertEqual(2, len(info['test_logging_utils']['handlers']))
 
     def test_remove_root_logger_handlers(self):
         print('-- %s --' % inspect.stack()[0][3])

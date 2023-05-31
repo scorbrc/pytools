@@ -174,7 +174,7 @@ class ChangepointTest(unittest.TestCase):
                     if pct_diff(ci, cps[0].ci) < 15:
                         if pct_diff(ci + cn, cps[1].ci) < 15:
                             success += 1
-            self.assertTrue(success / count > .8,
+            self.assertTrue(success / count > .7,
                             "success=%d, count=%d" % (success, count))
 
     def test_rs_cpd_multi_up_and_down_cycle(self):

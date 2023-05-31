@@ -1,3 +1,4 @@
+import inspect
 import logging
 from logging.handlers import RotatingFileHandler
 import multiprocessing as mp
@@ -42,7 +43,9 @@ def get_default_app_name(app_name=None):
     based on the executing script name.
     """
     if app_name is None:
-        return os.path.basename(os.path.splitext(sys.argv[0])[0])
+        app_name = os.path.basename(os.path.splitext(sys.argv[0])[0])
+        if len(app_name.split()) > 1:
+            app_name = inspect.stack()[2][3]
     return app_name
 
 

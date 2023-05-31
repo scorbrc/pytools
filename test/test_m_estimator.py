@@ -1,7 +1,7 @@
 import unittest
 import inspect
 from random import weibullvariate
-from util.m_estimator import m_estimate, m_1est
+from util.m_estimator import m_estimate
 from util.stat_utils import mean, stderr
 from util.timer import Timer
 

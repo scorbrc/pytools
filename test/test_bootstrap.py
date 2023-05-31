@@ -47,8 +47,6 @@ class TestBootstrap(unittest.TestCase):
     def test_p_conf(self):
         print('-------' + inspect.stack()[0][3])
         for data in (DATA1, DATA2):
-            print("\n%-10s %7s %7s %7s %7s" %
-                  ('agg_fn', 'l95', 'u95', 'l99', 'u99'))
             for agg_fn in (median, mean, trim_mean):
                 l95s = []
                 u95s = []
@@ -64,7 +62,6 @@ class TestBootstrap(unittest.TestCase):
                 rpt = "%-10s %7.3f %7.3f %7.3f %7.3f" % \
                     (agg_fn.__name__,
                      mean(l95s), mean(u95s), mean(l99s), mean(u99s))
-                print(rpt)
                 self.assertTrue(mean(l99s) <= mean(l95s), rpt)
                 self.assertTrue(mean(u99s) >= mean(u95s), rpt)
 
@@ -77,15 +74,10 @@ class TestBootstrap(unittest.TestCase):
                 for _ in range(100):
                     p_conf(data)
             results.append((data_n, tm.secs))
-        print("%6s %7s %s" % ('data_n', 'secs', 'pcd'))
-        for i in range(len(results)):
-            pcd = 0
-            if i > 0:
-                pcd = pct_diff(results[i][1], results[i - 1][1])
-            print("%6d %7.3f %7.3f%%" %
-                  (results[i][0],
-                   results[i][1],
-                   pcd))
+        for i in range(2, len(results)):
+            pcd = pct_diff(results[i][1], results[i - 1][1])
+            rpt = "%6d %7.3f %7.3f%%" % (results[i][0], results[i][1], pcd)
+            self.assertTrue(pcd < 15, rpt)
 
     def test_p_conf_range(self):
         print('-------' + inspect.stack()[0][3])
@@ -141,8 +133,6 @@ class TestBootstrap(unittest.TestCase):
     def test_t_conf(self):
         print('-------' + inspect.stack()[0][3])
         for data in (DATA1, DATA2):
-            print("\n%-10s %-10s %7s %7s %7s %7s" %
-                  ('loc_fn', 'var_fn', 'l95', 'u95', 'l99', 'u99'))
             for loc_fn, var_fn in ((mean, stderr), (trim_mean, w_stderr)):
                 l95s = []
                 u95s = []
@@ -158,7 +148,6 @@ class TestBootstrap(unittest.TestCase):
                 rpt = "%-10s %-10s %7.3f %7.3f %7.3f %7.3f" % \
                     (loc_fn.__name__, var_fn.__name__,
                      mean(l95s), mean(u95s), mean(l99s), mean(u99s))
-                print(rpt)
                 self.assertTrue(mean(l99s) <= mean(l95s), rpt)
                 self.assertTrue(mean(u99s) >= mean(u95s), rpt)
 
@@ -198,7 +187,6 @@ class TestBootstrap(unittest.TestCase):
 
         rpt = "lc1=%.3f uc1=%.3f lc2=%.3f uc2=%.3f lc3=%.3f uc3=%.3f" % \
               (lc1, uc1, lc2, uc2, lc3, uc3)
-        print(rpt)
         self.assertTrue(lc2 > lc1, rpt)
         self.assertTrue(uc2 > lc2, rpt)
 
@@ -211,13 +199,11 @@ class TestBootstrap(unittest.TestCase):
                 for _ in range(100):
                     t_conf(data)
             results.append((data_n, tm.secs))
-        print("%6s %7s %7s" % ('data_n', 'secs', 'pcd'))
-        for i in range(len(results)):
-            pcd = 0
-            if i > 0:
-                pcd = pct_diff(results[i][1], results[i - 1][1])
-            print("%6d %7.3f %7.3f%%" %
-                  (results[i][0], results[i][1], pcd))
+        for i in range(2, len(results)):
+            pcd = pct_diff(results[i][1], results[i - 1][1])
+            rpt = "%6d %7.3f %7.3f%%" % (results[i][0], results[i][1], pcd)
+            self.assertTrue(pcd < 15, rpt)
+
 
     def test_t_conf_range(self):
         print('-------' + inspect.stack()[0][3])
