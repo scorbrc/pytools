@@ -4,7 +4,8 @@ Statistical utility functions.
 from bisect import bisect_left
 from collections import defaultdict
 import datetime as dt
-from math import ceil, copysign, floor, sqrt
+from math import ceil, copysign, exp, floor, sqrt
+from random import random
 from .base_stats import (
     mean,
     percentile,
@@ -17,6 +18,10 @@ from .open_record import OpenRecord
 MIN_SCORE = -6 + 1e-6
 MAX_SCORE = 6 + 1e-6
 PERCENTILES = (0, .1, .5, 1, 5, 10, 25, 50, 75, 90, 95, 99, 99.5, 99.9, 100)
+
+
+def arl(k, h):
+    return ceil((exp(-2 * k * (h + 1.166)) + (2 * k * (h + 1.166)) - 1) / (2 * k**2))
 
 
 def c4(n):
@@ -81,7 +86,16 @@ def fit(obs, eps):
 
 def median(data):
     """ The 50th peercentile value in 'data'. """
-    return percentile(data, 50)
+    md = 0
+    n = len(data)
+    if n:
+        xs = sorted(data)
+        m = n // 2
+        if n % 2 == 1:
+            md = xs[m]
+        else:
+            md = (xs[m] + xs[m-1]) / 2
+    return md
 
 
 def mk_trend(data):
@@ -295,7 +309,7 @@ def wx_test(test, base=None):
     which assumes 'test' to already be differences. Returns normalized score.
     """
     n = len(test)
-    if n < 12:
+    if n < 3:
         raise ValueError("Not enough data.")
     data = test
     if base is not None:

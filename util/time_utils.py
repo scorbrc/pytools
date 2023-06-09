@@ -1,5 +1,7 @@
-""" Time utility tools that aim to parse any date/time into either a
-local time or a UTC time. """
+"""
+Time utility tools that aim to parse any date/time into either a
+local time or a UTC time.
+"""
 import datetime as dt
 import dateutil.parser as dp
 from dateutil import tz

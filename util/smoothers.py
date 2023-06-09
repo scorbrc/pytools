@@ -164,19 +164,3 @@ def sma(data, window_n=None, agg_fn=trim_mean):
         window.append(data[i])
     scale = len(sm_data) / data_n
     return [sm_data[int(i * scale)] for i in range(len(data))]
-
-
-def tes(data, fn=3, a=.1):
-    s1 = s2 = s3 = 0
-    b = 1 - a
-    eps = [0] * (fn + 1)
-    for t, x0 in enumerate(data):
-        yield eps[t] if t >= fn else x0
-        s1 = (a * x0) + (b * s1)
-        s2 = (a * s1) + (b * s2)
-        s3 = (a * s2) + (b * s3)
-        w1 = (3 * s1) - (3 * s2) + s3
-        w2 = ((a / (2 * b)) * (((6 - (5 * a)) * s1) -
-              (2 * (5 - (4 * a)) * s2) + ((4 - (3 * a)) * s3)))
-        w3 = ((a**2) / (b**2)) * (s1 - (2 * s2) + s3)
-        eps.append(max(w1 + (w2 * fn) + ((w3 * (fn**2)) / 2), 0))

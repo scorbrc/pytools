@@ -1,11 +1,16 @@
-""" A context class for profiles block of code and produces report. """
+""" A context class for profiling block of code and producing reports. """
 import cProfile
 from pstats import Stats
 import io
 
 
 class Profiler():
-
+    """
+    Context managed profiler used like:
+    with Profiler() as pm:
+        # Code to profile.
+    print(pm)
+    """
     def __init__(self):
         self.__pr = cProfile.Profile()
         self.__rpt = ''

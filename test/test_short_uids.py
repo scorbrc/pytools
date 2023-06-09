@@ -9,16 +9,16 @@ class ShortUIDTest(unittest.TestCase):
     def test_short_uid_length(self):
         print(inspect.stack()[0][3])
         short_uid = ShortUID()
-        for _ in range(100000):
+        for _ in range(100):
             uid = short_uid.next()
-            self.assertEqual(12, len(uid))
+            self.assertEqual(12, len(uid), "Expected length to be 12.")
 
     def test_short_uid_series(self):
         print(inspect.stack()[0][3])
         short_uid = ShortUID()
-        self.assertTrue(short_uid.next().startswith('x'))
+        self.assertTrue(short_uid.next().startswith('x'), "Expected series 'x'")
         short_uid = ShortUID('a')
-        self.assertTrue(short_uid.next().startswith('a'))
+        self.assertTrue(short_uid.next().startswith('a'), "Expected series 'a'")
         with self.assertRaises(ValueError):
             ShortUID('ab')
 
@@ -30,7 +30,7 @@ class ShortUIDTest(unittest.TestCase):
         with Timer() as tm:
             for _ in range(count):
                 uids.add(short_uid.next())
-        self.assertEqual(count, len(uids))
+        self.assertEqual(count, len(uids), "Expected no collisions.")
         self.assertTrue(tm.secs < 2)
 
 

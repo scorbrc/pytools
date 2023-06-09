@@ -113,6 +113,21 @@ def chart(title, dates, obs, names=None, fp=None):
     plt.close()
 
 
+def histogram(title, data, fp=None):
+    if fp is None:
+        fp = "charts/%s_test.png" % to_snake_name(title)
+    fig, ax1 = plt.subplots(1, 1, figsize=(10, 8))
+    ax1.set_title(title, fontsize=14)
+    ax1.hist(data, bins=int(len(data)**(3/4)), color='deepskyblue')
+    ax1.set_ylabel('Counts', fontsize=12)
+    props = dict(boxstyle='round', facecolor='gainsboro', alpha=0.5)
+    textstr = "$\\mu=%.3f$\n$\\sigma=%.3f$" % (np.mean(data), np.std(data))
+    ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=12,
+             verticalalignment='top', bbox=props)
+    plt.savefig(fp)
+    plt.close()
+
+
 def test_chart(title, before, after, score, pct_diff=0, fp=None):
     """
     Generate a test chart with 'title' at the top and the 'before' and

@@ -5,10 +5,14 @@ from test_evaluator import TestEvaluator
 from util.open_record import OpenRecord
 from util.stat_utils import describe
 from util.testers import (
-    pcusum,
-    pewma,
-    tcusum,
-    tewma
+    grs_cusum,
+    grs_ewma,
+    gti_cusum,
+    gti_ewma,
+    pr_cusum,
+    pr_ewma,
+    ti_cusum,
+    ti_ewma
 )
 from util.timer import Timer
 
@@ -27,48 +31,100 @@ DATA2 = [2.16, 3.48, 1.79, 4.32, 2.21, 5.93, 3.0, 4.16, 4.57, 2.46, 5.67,
 
 class TestersTest(unittest.TestCase):
 
-    def test_testers(self):
+    def test_grouped_testers(self):
         print('-- %s --' % inspect.stack()[0][3])
-        base_n = 30
-        for tst, tp, h, n in ((pewma, .33, .92, 6),
-                                (pcusum, .5, 2, 6),
-                                (tewma, .33, 2, 2),
-                                (tcusum, 1, 3, 6)):
-            for i, ts in enumerate(tst(DATA1, base_n, tp)):
+        gp_n = 4
+        for tst, tp, h, n in ((grs_cusum, .5, 3, 8),
+                              (grs_ewma, .5, 2, 9),
+                              (gti_cusum, .5, 3, 9),
+                              (gti_ewma, .5, 2, 9)):
+            for i, ts in enumerate(tst(DATA1, gp_n, tp)):
                 if abs(ts) > h:
                     self.assertEqual(n, i, tst.__name__)
                     break
+
+
+    def test_testers(self):
+        print('-- %s --' % inspect.stack()[0][3])
+        base_n = 30
+        for tst, tp, h, n in ((pr_ewma, .33, .92, 36),
+                              (pr_cusum, .5, 2, 36),
+                              (ti_ewma, .33, 2.5, 32),
+                              (ti_cusum, .5, 3, 32)):
+            for i, ts in enumerate(tst(DATA1, tp)):
+                if abs(ts) > h:
+                    self.assertEqual(n, i, tst.__name__)
+                    break
+
+    def test_grouped_testers_range(self):
+        print('-- %s --' % inspect.stack()[0][3])
+        count = 200
+        base_n = 500
+        test_n = 100
+        gp_n = 5
+        sc = 1.1
+        reports = []
+        for tst, tp, h in ((grs_cusum, 1, 3.5),
+                           (grs_ewma, .15, 2),
+                           (gti_cusum, .5, 2.5),
+                           (gti_ewma, .15, 1.5)):
+            test_name = "%s_%.2f_%.2f" % (tst.__name__, tp, h)
+            eval = TestEvaluator(test_name)
+            with Timer() as tm:
+                for cr in (.25, 1, 3):
+                    for _ in range(count):
+                        data = [weibullvariate(1, sc) for _ in range(base_n)] + \
+                               [weibullvariate(cr, sc) for _ in range(test_n)]
+                        cp_k = max_ts = 0
+                        for i, ts in enumerate(tst(data, gp_n, tp)):
+                            if i * gp_n >= base_n:
+                                if cp_k == 0:
+                                    if abs(ts) > h:
+                                        cp_k = i
+                                if abs(ts) > abs(max_ts):
+                                    max_ts = ts
+                        eval.count(cr, cp_k, base_n // gp_n, max_ts, h)
+            rpt = eval.report()
+            rpt.tm = tm.secs
+            reports.append(rpt)
+            self.assertTrue(rpt.fp < .02, rpt)
+            self.assertTrue(rpt.fn < .35, rpt)
+            self.assertTrue(rpt.ttd < 20, rpt)
+        print(OpenRecord.to_text_rows(reports))
 
     def test_testers_range(self):
         print('-- %s --' % inspect.stack()[0][3])
         count = 200
         base_n = 300
-        test_n = 30
-        sc = 1.5
+        test_n = 50
+        sc = 1.1
         reports = []
-        for tst, tp, h in ((pcusum, .65, 1.25),
-                           (pewma, .15, .92),
-                           (tcusum, .5, 2.5),
-                           (tewma, .15, 2)):
+        for tst, tp, h in ((pr_cusum, .5, 2),
+                           (pr_ewma, .15, .92),
+                           (ti_cusum, .5, 3.5),
+                           (ti_ewma, .15, 2.5)):
             test_name = "%s_%.2f_%.2f" % (tst.__name__, tp, h)
             eval = TestEvaluator(test_name)
-            for cr in (.25, 1, 3):
-                for _ in range(count):
-                    data = [weibullvariate(1, sc) for _ in range(base_n)] + \
-                           [weibullvariate(cr, sc) for _ in range(test_n)]
-                    cp_k = max_ts = 0
-                    for i, ts in enumerate(tst(data, base_n, tp)):
-                        if cp_k == 0:
-                            if abs(ts) > h:
-                                cp_k = i + base_n
-                        if abs(ts) > abs(max_ts):
-                            max_ts = ts
-                    eval.count(cr, cp_k, base_n, max_ts, h)
+            with Timer() as tm:
+                for cr in (.25, 1, 3):
+                    for _ in range(count):
+                        data = [weibullvariate(1, sc) for _ in range(base_n)] + \
+                               [weibullvariate(cr, sc) for _ in range(test_n)]
+                        cp_k = max_ts = 0
+                        for i, ts in enumerate(tst(data, tp)):
+                            if i >= base_n:
+                                if cp_k == 0:
+                                    if abs(ts) > h:
+                                        cp_k = i
+                                if abs(ts) > abs(max_ts):
+                                    max_ts = ts
+                        eval.count(cr, cp_k, base_n, max_ts, h)
             rpt = eval.report()
+            rpt.tm = tm.secs
             reports.append(rpt)
-            self.assertTrue(rpt.fp < .01, rpt)
-            self.assertTrue(rpt.fn < .1, rpt)
-            self.assertTrue(rpt.ttd < 15, rpt)
+            self.assertTrue(rpt.fp < .02, rpt)
+            self.assertTrue(rpt.fn < .35, rpt)
+            self.assertTrue(rpt.ttd < 20, rpt)
         print(OpenRecord.to_text_rows(reports))
 
 

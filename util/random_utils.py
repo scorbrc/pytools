@@ -1,22 +1,22 @@
 """ Random utility tools. """
 import datetime as dt
 from random import choice, choices, random, randint, sample, shuffle
-import string
+from string import digits, ascii_lowercase, ascii_uppercase
 from time import time
 from util.time_utils import to_utc
 
 
 # Base 36 characters.
-B36_CHARS = string.digits + string.ascii_uppercase
+B36_CHARS = digits + ascii_uppercase
 
 # Base 62 characters.
-B62_CHARS = string.digits + string.ascii_lowercase + string.ascii_uppercase
+B62_CHARS = digits + ascii_lowercase + ascii_uppercase
 
 # Character classes for random composite words.
 RANDOM_COMP_CHARS = \
-    (string.digits,
-     string.ascii_uppercase,
-     string.ascii_lowercase,
+    (digits,
+     ascii_uppercase,
+     ascii_lowercase,
      '!#$%&*+=?@~^')
 
 
@@ -201,7 +201,7 @@ def random_b16(n_chars):
 
 def random_b36(n_chars):
     """ Generate random base 62 string 'n_chars' characters long, """
-    return ''.join(choices(string.digits + string.ascii_uppercase, k=n_chars))
+    return ''.join(choices(digits + ascii_uppercase, k=n_chars))
 
 
 def random_b62(n_chars):
@@ -234,7 +234,7 @@ def random_date(max_offset_secs=60 * 60 * 24 * 7, latest_date=None):
 
 
 def random_digits(n):
-    return ''.join([choice(string.digits) for _ in range(n)])
+    return ''.join([choice(digits) for _ in range(n)])
 
 
 def random_words(word_ct=2, camel=False, delim=''):

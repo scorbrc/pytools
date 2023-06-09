@@ -13,7 +13,7 @@ new type of value 'new'.
 RecDiff = namedtuple('RecDiff', ('key', 'diff', 'desc', 'old', 'new'))
 
 
-def _add_diff_(key, diff, desc, old, new, diffs):
+def add_diff(key, diff, desc, old, new, diffs):
     if diff == 'type':
         old = type(old).__name__
         new = type(new).__name__
@@ -44,7 +44,7 @@ def rec_diff(key, old_rec, new_rec, excls=None, diffs=None):
             # old_rec value is a list
             if not isinstance(new_rec, (list, tuple)):
                 desc = 'new is not a list'
-                _add_diff_(key, 'type', desc, old_rec, new_rec, diffs)
+                add_diff(key, 'type', desc, old_rec, new_rec, diffs)
             else:
                 btypes = set([type(x) for x in old_rec])
                 ttypes = set([type(x) for x in new_rec])
@@ -55,10 +55,10 @@ def rec_diff(key, old_rec, new_rec, excls=None, diffs=None):
                     test_set = set(new_rec)
                     for d in base_set.difference(test_set):
                         desc = 'old not in new list'
-                        _add_diff_(key, 'removed', desc, d, None, diffs)
+                        add_diff(key, 'removed', desc, d, None, diffs)
                     for d in test_set.difference(base_set):
                         desc = 'new not in old list'
-                        _add_diff_(key, 'added', desc, None, d, diffs)
+                        add_diff(key, 'added', desc, None, d, diffs)
                 else:
                     # Array of objects - order by string representations and
                     # compare one by one.
@@ -70,25 +70,25 @@ def rec_diff(key, old_rec, new_rec, excls=None, diffs=None):
                             rec_diff(key, bx[i], tx[i], excls, diffs)
                         elif i < len(bx):
                             desc = 'old not in new object'
-                            _add_diff_(
+                            add_diff(
                                 key, 'removed', desc, bx[i], None, diffs)
                         else:
                             desc = 'new not in old object'
-                            _add_diff_(key, 'added', desc, None, tx[i], diffs)
+                            add_diff(key, 'added', desc, None, tx[i], diffs)
                         if len(diffs) > diff_ct:
                             break
         elif isinstance(old_rec, dict):
             # old_rec value is an object
             if not isinstance(new_rec, dict):
                 desc = 'new not a dict'
-                _add_diff_(key, 'type', desc, old_rec, new_rec, diffs)
+                add_diff(key, 'type', desc, old_rec, new_rec, diffs)
             for base_key in sorted(old_rec):
                 bv = old_rec[base_key]
                 if not is_excluded(base_key, excls):
                     full_key = "%s.%s" % (key, base_key)
                     if base_key not in new_rec:
                         desc = 'old key not in new dict'
-                        _add_diff_(full_key, 'removed', desc, bv, None, diffs)
+                        add_diff(full_key, 'removed', desc, bv, None, diffs)
                     elif isinstance(bv, (list, tuple)):
                         tv = new_rec[base_key]
                         rec_diff(full_key, bv, tv, excls, diffs)
@@ -99,7 +99,7 @@ def rec_diff(key, old_rec, new_rec, excls=None, diffs=None):
                         tv = new_rec[base_key]
                         if bv != tv:
                             desc = 'new dict value changed'
-                            _add_diff_(
+                            add_diff(
                                 full_key, 'changed', desc, bv, tv, diffs)
             for test_key in sorted(new_rec, key=lambda k: str(k)):
                 if not is_excluded(test_key, excls):
@@ -107,13 +107,13 @@ def rec_diff(key, old_rec, new_rec, excls=None, diffs=None):
                     full_key = "%s.%s" % (key, test_key)
                     if test_key not in old_rec:
                         desc = 'new key not in old dict'
-                        _add_diff_(full_key, 'added', desc, None, tv, diffs)
+                        add_diff(full_key, 'added', desc, None, tv, diffs)
         else:
             # base rec is a value
             if not isinstance(old_rec, type(new_rec)):
                 desc = 'new not same type'
-                _add_diff_(key, 'type', desc, old_rec, new_rec, diffs)
+                add_diff(key, 'type', desc, old_rec, new_rec, diffs)
             elif old_rec != new_rec:
                 desc = 'new value changed'
-                _add_diff_(key, 'changed', desc, old_rec, new_rec, diffs)
+                add_diff(key, 'changed', desc, old_rec, new_rec, diffs)
     return diffs

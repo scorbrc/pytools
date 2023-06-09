@@ -6,6 +6,7 @@ from util.data_generator import gen_dates
 from util.open_record import OpenRecord
 from util.stat_utils import (
     describe,
+    epk,
     fit,
     mean,
     median,

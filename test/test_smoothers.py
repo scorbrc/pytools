@@ -126,14 +126,6 @@ class TestSmoothers(unittest.TestCase):
         print(mape, mpe)
         chart('sma', gen_dates(24, len(obs)), (obs, eps))
 
-    def test_tes(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        obs = DATA3
-        eps = list(tes(obs))
-        mape, mpe = fit(obs, eps)
-        print(mape, mpe)
-        chart('tes', gen_dates(24, len(obs)), (obs, eps))
-
 
 if __name__ == '__main__':
     unittest.main()

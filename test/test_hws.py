@@ -4,7 +4,7 @@ from random import randint
 from test_evaluator import TestEvaluator
 from util.charts import chart
 from util.data_generator import change, gen_cycle
-from util.hws import ewma, hws
+from util.hws import hws
 from util.open_record import OpenRecord
 from util.stat_utils import describe, fit
 from util.timer import Timer
@@ -21,8 +21,7 @@ class TestHws(unittest.TestCase):
         mapes = []
         mpes = []
         reports = []
-        for h, (low_cr, mid_cr, high_cr) in ((3.0, (.25, 1.0, 3.0)),
-                                             (3.0, (.5, 1.0, 2.0))):
+        for h, (low_cr, mid_cr, high_cr) in ((2, (.25, 1.0, 3.0)),):
             with Timer() as tm:
                 test_name = "hws_%.3f_%.3f_%.3f_%.3f" % (
                     h, low_cr, mid_cr, high_cr)
@@ -30,14 +29,14 @@ class TestHws(unittest.TestCase):
                 for cr in (low_cr, mid_cr, high_cr):
                     for i in range(test_ct):
                         dates, obs = gen_cycle(1, day_n, data_n, sc=sc)
-                        ci = randint(data_n - day_n // 2, data_n)
-                        obs = change(obs, cr, data_n - ci, data_n)
+                        ci = randint(data_n - day_n // 2, data_n - day_n // 8)
+                        obs = change(obs, cr, ci, data_n)
                         eps = []
                         cp_k = max_ts = 0
-                        for t, (y, ts) in enumerate(hws(dates, obs)):
-                            eps.append(y)
+                        eps, scs = hws(dates, obs)
+                        for t, ts in enumerate(scs):
                             if t >= data_n - day_n:
-                                if abs(ts) > max_ts:
+                                if abs(ts) > abs(max_ts):
                                     max_ts = ts
                                 if cp_k == 0:
                                     if abs(ts) > h:
@@ -46,12 +45,14 @@ class TestHws(unittest.TestCase):
                         mape, mpe = fit(obs[:-day_n], eps[:-day_n])
                         mapes.append(mape)
                         mpes.append(mpe)
-                        if i < 0:
-                            chart(test_name,
-                                  dates[-day_n * 7:],
-                                  (obs[-day_n * 7:],
-                                   eps[-day_n * 7:]))
-                reports.append(ev.report())
+                        if i == 0:
+                            chart("%s_%.3f" % (test_name, cr),
+                                  dates[-day_n * 3:],
+                                  (obs[-day_n * 3:],
+                                   eps[-day_n * 3:]))
+                rpt = ev.report()
+            rpt.millis = tm.millis / test_ct
+            reports.append(rpt)
         print(OpenRecord.to_text_rows(reports))
         print(tm)
         print(OpenRecord.to_text_cols(

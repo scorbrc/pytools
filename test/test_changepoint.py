@@ -153,9 +153,9 @@ class ChangepointTest(unittest.TestCase):
                 3.56, 3.88, 2.78, 3.09, 4.54, 4.72, 1.94, 3.33, 5.81]
         cps = ti_cpd_multi(data, 2)
         self.assertEqual(2, len(cps))
-        self.assertEqual(-2.832, round(cps[0].ts, 3))
+        self.assertEqual(-2.434, round(cps[0].ts, 3))
         self.assertEqual(50, cps[0].ci, 2)
-        self.assertEqual(2.009, round(cps[1].ts, 3))
+        self.assertEqual(2.09, round(cps[1].ts, 3))
         self.assertTrue(cps[1].ci >= 101 and cps[1].ci <= 103, cps)
 
     def test_rs_cpd_multi_up_and_down(self):

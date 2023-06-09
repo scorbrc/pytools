@@ -10,7 +10,6 @@ import io
 import json
 import sys
 import types
-from typing import Callable
 from .text_fmt import to_text_cols, to_text_rows
 
 
