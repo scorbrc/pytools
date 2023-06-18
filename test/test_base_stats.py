@@ -1,4 +1,3 @@
-import inspect
 import unittest
 from util.base_stats import (
     mean,
@@ -6,6 +5,7 @@ from util.base_stats import (
     rankdata,
     std
 )
+from util.util_tools import get_source_info
 
 DATA1 = [14.34, 15.27, 2.64, 11.6, 28.81, 35.01, 24.5, 25.78, 11.94, 13.95,
          22.84, 21.67, 32.45, 8.96, 15.38, 32.34, 41.75, 4.87, 4.89, 30.59,
@@ -27,17 +27,17 @@ DATA4 = [0.12, 0.13, 0.13, 0.14, 0.15, 0.16, 0.2, 0.23, 0.33, 0.45, 0.53,
 class TestBaseStats(unittest.TestCase):
 
     def test_mean(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertAlmostEqual(23.468, mean(DATA1), 2)
         self.assertAlmostEqual(0.7142, mean(DATA2), 2)
         self.assertAlmostEqual(9.9473, mean(DATA3), 2)
 
     def test_percentile_one(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertAlmostEqual(33.6, percentile(list(range(3, 40, 2)), 85), 2)
 
     def test_percentile_many(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         ps = percentile(list(range(5, 300, 3)), (1, 30, 75, 98))
         self.assertEqual(4, len(ps))
         self.assertAlmostEqual(7.94, ps[0], 2)
@@ -46,7 +46,7 @@ class TestBaseStats(unittest.TestCase):
         self.assertAlmostEqual(293.12, ps[3], 2)
 
     def test_percentile_many_unordered(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         ps = percentile(list(range(5, 300, 3)), (95, 77, 48, 66))
         self.assertEqual(4, len(ps))
         self.assertAlmostEqual(284.3, ps[0], 2)
@@ -55,7 +55,7 @@ class TestBaseStats(unittest.TestCase):
         self.assertAlmostEqual(199.04, ps[3], 2)
 
     def test_rankdata(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         for i, (x, r) in enumerate(zip(DATA3, rankdata(DATA3))):
             if i == 2:
                 self.assertAlmostEqual(2.0, r, 2)
@@ -63,7 +63,7 @@ class TestBaseStats(unittest.TestCase):
                 self.assertAlmostEqual(23.0, r, 2)
 
     def test_rankdata_ties(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         data = sorted(DATA2)
         for i, (x, r) in enumerate(zip(data, rankdata(data))):
             if i < 9:
@@ -74,12 +74,12 @@ class TestBaseStats(unittest.TestCase):
                 self.assertEqual(20.0, r)
 
     def test_std(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertAlmostEqual(11.497, std(DATA1), 3)
         self.assertAlmostEqual(0.7171, std(DATA2), 3)
 
     def test_std_small(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertEqual(0, std([1, 1, 1]))
         self.assertAlmostEqual(1.626, std([1.2, 2.3, 4.4]), 3)
         self.assertAlmostEqual(5.520, std([1.721, 9.528]), 3)

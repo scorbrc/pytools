@@ -11,8 +11,7 @@ from util.stat_utils import (
     median,
     period_key,
     period_truncate,
-    periods_per_day,
-    rs_test
+    periods_per_day
 )
 
 

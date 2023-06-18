@@ -5,7 +5,6 @@ from bisect import bisect_left
 from collections import defaultdict
 import datetime as dt
 from math import ceil, copysign, exp, floor, sqrt
-from random import random
 from .base_stats import (
     mean,
     percentile,
@@ -21,7 +20,8 @@ PERCENTILES = (0, .1, .5, 1, 5, 10, 25, 50, 75, 90, 95, 99, 99.5, 99.9, 100)
 
 
 def arl(k, h):
-    return ceil((exp(-2 * k * (h + 1.166)) + (2 * k * (h + 1.166)) - 1) / (2 * k**2))
+    return ceil((exp(-2 * k * (h + 1.166)) +
+                (2 * k * (h + 1.166)) - 1) / (2 * k**2))
 
 
 def c4(n):
@@ -94,7 +94,7 @@ def median(data):
         if n % 2 == 1:
             md = xs[m]
         else:
-            md = (xs[m] + xs[m-1]) / 2
+            md = (xs[m] + xs[m - 1]) / 2
     return md
 
 

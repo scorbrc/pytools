@@ -1,11 +1,12 @@
 from math import sqrt
-from util.stat_utils import mean, median, pct_diff, std
+from util.stat_utils import median, pct_diff, std
 
 
 def m_estimate(data, cf=2):
     """
-    Robust measure of location for 'data'. Outliers are weighted towards the mean.
-    'cf' is the convergence factor that determines how aggressive data are weighted.
+    Robust measure of location for 'data'. Outliers are weighted towards
+    the mean. 'cf' is the convergence factor that determines how aggressive
+    data are weighted.
     """
     n = len(data)
     if n < 5:
@@ -26,5 +27,5 @@ def m_estimate(data, cf=2):
         m1 = ws / n
         if m0 + m1 > 0 and abs(pct_diff(m1, m0)) < .01:
             break
-    se = std([x*w for x, w in zip(data, wt)], m1) / sqrt(wt.count(1))
+    se = std([x * w for x, w in zip(data, wt)], m1) / sqrt(wt.count(1))
     return m1, se, wt

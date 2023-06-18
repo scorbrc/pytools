@@ -3,7 +3,7 @@ Testers for determining when a change has occurred in a series of values.
 """
 from bisect import bisect_left
 from math import sqrt
-from util.stat_utils import c4, mean, median, rs_test, std, wx_test
+from util.stat_utils import c4, mean, median, rs_test, std
 from util.transform import to_sqrt_trans
 
 
@@ -71,10 +71,10 @@ def grs_scores(data, gp_n):
     for x in data:
         gp.append(x)
         if len(gp) == gp_n:
-            m1 = median(gp)
-            m0 = ts = 0
+            median(gp)
+            ts = 0
             if len(base) >= gp_n * 2:
-                m0 = median(base)
+                median(base)
                 ts = rs_test(base, gp)
             base.extend(gp)
             gp = []
@@ -97,11 +97,13 @@ def pr_scores(data):
             stage = []
         yield ps
 
+
 def ti_scores(data):
     n = len(data)
     ref_n = int(sqrt(n))
     stage = []
     base = []
+    mu = sd = 1
     for x in to_sqrt_trans(data):
         ts = 0
         if len(base):
@@ -179,5 +181,5 @@ def ti_ewma(data, a):
     T independent exponentially weighted moving averahe tester for the
     values in 'data' using 'a' as the smoothing factor.
     """
-    g = (a / (2 - a))**(1/2)
+    g = (a / (2 - a))**(1 / 2)
     return (ts / g for ts in ewma(ti_scores(data), a))

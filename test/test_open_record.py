@@ -1,12 +1,12 @@
 import unittest
 import csv
 import datetime as dt
-import inspect
 import io
 import json
 from random import choice, choices, shuffle
 import string
 from util.open_record import OpenRecord
+from util.util_tools import get_source_info
 
 
 def random_b36(n_chars):
@@ -17,20 +17,20 @@ def random_b36(n_chars):
 class OpenRecordTest(unittest.TestCase):
 
     def test_construct_fields(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(foo=456, bar='def')
         self.assertTrue(rec.foo == 456)
         self.assertTrue(rec.bar == 'def')
 
     def test_construct_pairs(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(zip(['a', 'b', 'c'], [1, 'x', 3.21]))
         self.assertTrue(rec.a == 1)
         self.assertTrue(rec.b == 'x')
         self.assertTrue(rec.c == 3.21)
 
     def test_add_method(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(name='add_a_method')
 
         def xdata(self):
@@ -39,7 +39,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual([1, 2, 3], rec.data())
 
     def test_csv(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         so = io.StringIO()
         wt = csv.writer(so)
         cd = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
@@ -56,7 +56,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual('3', recs[2].f3)
 
     def test_dict_1(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec1 = OpenRecord(a=1, b=2.1)
         rec2 = rec1.copy()
         rec1.b = 3.4
@@ -64,7 +64,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(3.4, rec1.b)
 
     def test_dict_2(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         r1 = OpenRecord(n1='abc')
         r1.embedded = OpenRecord(n2='123', a=1, b=2, c=3)
         r1.details = ['abc', 'str', OpenRecord(n3='123', z=-1), 0, 1.2]
@@ -78,14 +78,14 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(len(r1['details']), len(r2['details']))
 
     def test_dict_values(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(a=1, b=2, c=[1, 2, 3],
                          sr=OpenRecord(x=1, y=2, z=[1, 2, 3]))
         self.assertEqual(1, rec.a, str(rec))
         self.assertEqual(2, rec.sr.y, str(rec))
 
     def test_embedded(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         dd = {'name': 'the_name',
               'a': 1,
               'b': {'first': 'last',
@@ -99,7 +99,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertTrue(isinstance(rec.b.y, OpenRecord))
 
     def test_equals(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         r1 = OpenRecord(a='one', b='two')
         r2 = OpenRecord(r1)
         self.assertTrue(r1 == r2)
@@ -107,12 +107,12 @@ class OpenRecordTest(unittest.TestCase):
         self.assertFalse(r1 == r2)
 
     def test_field_count(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(a=1, b=2, c=3)
         self.assertEqual(3, len(rec.values()))
 
     def test_fields(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord()
         rec.foo = 123
         self.assertTrue(rec.foo == 123)
@@ -123,7 +123,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertTrue(list(rec.values()) == [123, 'xyz'])
 
     def test_keys(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         # OpenRecords will be ordered by 'a' if key 'k' not defined.
         recs1 = []
         for i in range(5):
@@ -148,7 +148,7 @@ class OpenRecordTest(unittest.TestCase):
             last_k = rec.k
 
     def test_repr_01(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(a='one',
                          b={'first': 1, 'second': 2},
                          c=[{'x': 'one', 'y': 'two'}, {'z': 'three'}])
@@ -156,7 +156,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(exp, repr(rec), rec)
 
     def test_repr_02(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord({
             "audience": [
                 "eventing"
@@ -168,7 +168,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(exp, repr(rec), rec)
 
     def test_hash(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         r1 = OpenRecord(a='one', b='two')
         r2 = OpenRecord(r1)
         self.assertTrue(hash(r1) == hash(r2))
@@ -176,7 +176,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertFalse(hash(r1) == hash(r2))
 
     def test_json(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         js = '{"a":1,"b":2.31,"c":[1,2,3]}'
         rec = OpenRecord.create_from_json(js)
         self.assertTrue('a' in rec)
@@ -187,7 +187,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual([1, 2, 3], rec.c)
 
     def test_json_array(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         js = '[{"a":1,"b":"x","c":[1,2,3]},{"a":2,"b":"y","c":[1,2,3]}]'
         for x in (js, io.StringIO(js)):
             recs = list(OpenRecord.create_from_json(x))
@@ -206,7 +206,7 @@ class OpenRecordTest(unittest.TestCase):
             self.assertEqual([1, 2, 3], recs[1].c)
 
     def test_order(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d1 = dt.datetime.now() - dt.timedelta(days=1)
         d2 = dt.datetime.now() - dt.timedelta(days=2)
         d3 = dt.datetime.now() - dt.timedelta(days=3)
@@ -228,7 +228,7 @@ class OpenRecordTest(unittest.TestCase):
                         'x' and srecs[4].c == d1)
 
     def test_repr(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(a='x',
                          b={'first': 1, 'second': 2},
                          c=[{'x': 'one', 'y': 'two'}, {'z': 'three'}])
@@ -236,7 +236,7 @@ class OpenRecordTest(unittest.TestCase):
             '{a=x,b={first=1,second=2},c=[{x=one,y=two},{z=three}]}', repr(rec))
 
     def test_select(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec1 = OpenRecord(a=1, b=2, c=3)
         rec2 = rec1.select(('a', 'c'))
         self.assertTrue('a' in rec2)
@@ -246,7 +246,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(rec2.c, 3)
 
     def test_values(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord((('a', 1), ('b', 2), ('c', 3)))
         self.assertEqual(3, len(rec.values()))
         values = list(rec.values())
@@ -255,7 +255,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(3, values[2])
 
     def test_text_by_rows(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         recs = [OpenRecord(name='first',
                            value1=1.23,
                            value2=456,
@@ -273,7 +273,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(4, len(content.split('\n')[0].split()), content)
 
     def test_text_by_cols(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         recs = [OpenRecord(name='first',
                            value1=1.23,
                            value2=456,
@@ -291,7 +291,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(4, len(content.split('\n')[1].split()), content)
 
     def test_text_by_cols_embedded(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(
             name='first',
             date=dt.datetime.now(),
@@ -301,7 +301,7 @@ class OpenRecordTest(unittest.TestCase):
         self.assertEqual(1, rec.subs.a)
 
     def test_text_digits(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         rec = OpenRecord(a=1.23456, b=2.79797979)
         rpt = OpenRecord.to_text_cols(rec)
         for i, x in enumerate(rpt.split('\n')):
@@ -313,7 +313,7 @@ class OpenRecordTest(unittest.TestCase):
                 self.assertEqual('798', d)
 
     def test_text_max_len(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         recs = []
         for i in range(3):
             recs.append(

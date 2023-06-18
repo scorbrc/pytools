@@ -12,13 +12,6 @@ def create_file_handler(fp, level=logging.INFO, max_bytes=2**24, backups=3):
     Create file handler with file parth 'fp', logging 'level', maximum size
     of 'max_bytes' per file rotated between 'backups' number of files.
     """
-    for x in fp.split('/'):
-        if len(x) and os.path.isdir(x):
-            if not os.path.exists(x):
-                try:
-                    os.mkdir(x)
-                except FileExistsError:
-                    pass
     hd = RotatingFileHandler(fp, maxBytes=max_bytes, backupCount=backups)
     hd.setFormatter(
         logging.Formatter(
@@ -37,6 +30,7 @@ def create_stream_handler(level=logging.WARNING):
     hd.setLevel(level)
     return hd
 
+
 def get_default_app_name(app_name=None):
     """
     Creates a default application name if 'app_name' not given,
@@ -51,7 +45,7 @@ def get_default_app_name(app_name=None):
 
 def get_logger_info(logger=None):
     """
-    Generates JSON description of 'logger' or all currently configured
+    Generates description of 'logger' or all currently configured
     loggers if 'logger' not given.
     """
     info = {'root': {'logger': str(logging.getLogger()), 'handlers': []}}
@@ -90,9 +84,12 @@ def get_logger(app_name=None,
     pnum = [ch for ch in mp.current_process().name if ch.isdigit()]
     if len(pnum):
         app_name += '_' + ''.join(pnum)
+    exists = app_name in logging.Logger.manager.loggerDict
     log = logging.getLogger(app_name)
-    if not log.hasHandlers():
+    if not exists:
         log.setLevel(min(console_level, file_level))
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
         hd = create_file_handler(
             os.path.join(file_dir, app_name + '.log'),
             file_level,

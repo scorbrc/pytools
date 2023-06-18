@@ -1,5 +1,4 @@
 import unittest
-import inspect
 from random import expovariate, weibullvariate
 from util.bootstrap import repls, p_conf, t_conf
 from util.stat_utils import (
@@ -12,6 +11,7 @@ from util.stat_utils import (
     w_stderr
 )
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 DATA1 = [14.34, 15.27, 2.64, 11.6, 28.81, 35.01, 24.5, 25.78, 11.94, 13.95,
          22.84, 21.67, 32.45, 8.96, 15.38, 32.34, 21.75, 4.87, 4.89, 30.59,
@@ -31,21 +31,21 @@ def gen_data(cr, sc, n):
 class TestBootstrap(unittest.TestCase):
 
     def test_repls(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertEqual(2000, repls(30, 30, 2000))
         self.assertEqual(1936, repls(31))
         self.assertEqual(31, repls(1999, 30, 2000))
         self.assertEqual(30, repls(2000))
 
     def test_repls_half(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertEqual(1000, repls(30, 30, 1000))
         self.assertEqual(968, repls(31, 30, 1000))
         self.assertEqual(31, repls(999, 30, 1000))
         self.assertEqual(30, repls(1000, 30, 1000))
 
     def test_p_conf(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         for data in (DATA1, DATA2):
             for agg_fn in (median, mean, trim_mean):
                 l95s = []
@@ -66,7 +66,7 @@ class TestBootstrap(unittest.TestCase):
                 self.assertTrue(mean(u99s) >= mean(u95s), rpt)
 
     def test_p_conf_perf(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         results = []
         for data_n in (20, 50, 100, 200, 500, 1000):
             data = gen_data(1, .9, data_n)
@@ -80,7 +80,7 @@ class TestBootstrap(unittest.TestCase):
             self.assertTrue(pcd < 15, rpt)
 
     def test_p_conf_range(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         count = 50
         data_n = 100
         low_cr = .5
@@ -131,7 +131,7 @@ class TestBootstrap(unittest.TestCase):
             self.assertTrue(fn < .3, rpt)
 
     def test_t_conf(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         for data in (DATA1, DATA2):
             for loc_fn, var_fn in ((mean, stderr), (trim_mean, w_stderr)):
                 l95s = []
@@ -152,7 +152,7 @@ class TestBootstrap(unittest.TestCase):
                 self.assertTrue(mean(u99s) >= mean(u95s), rpt)
 
     def test_t_conf_exponential(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
 
         lower = []
         upper = []
@@ -191,7 +191,7 @@ class TestBootstrap(unittest.TestCase):
         self.assertTrue(uc2 > lc2, rpt)
 
     def test_t_conf_perf(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         results = []
         for data_n in (20, 50, 100, 200, 500, 1000):
             data = gen_data(1, .9, data_n)
@@ -204,9 +204,8 @@ class TestBootstrap(unittest.TestCase):
             rpt = "%6d %7.3f %7.3f%%" % (results[i][0], results[i][1], pcd)
             self.assertTrue(pcd < 15, rpt)
 
-
     def test_t_conf_range(self):
-        print('-------' + inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         count = 50
         data_n = 100
         low_cr = .5

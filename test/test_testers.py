@@ -1,9 +1,7 @@
 import unittest
-import inspect
 from random import weibullvariate
 from test_evaluator import TestEvaluator
 from util.open_record import OpenRecord
-from util.stat_utils import describe
 from util.testers import (
     grs_cusum,
     grs_ewma,
@@ -15,6 +13,7 @@ from util.testers import (
     ti_ewma
 )
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 
 DATA1 = [5.06, 4.2, 4.55, 6.08, 1.65, 7.33, 4.87, 4.41, 3.27, 8.54, 4.77,
@@ -29,10 +28,11 @@ DATA2 = [2.16, 3.48, 1.79, 4.32, 2.21, 5.93, 3.0, 4.16, 4.57, 2.46, 5.67,
          0.91, 0.17, 0.65, 1.33, 0.51, 0.14, 1.23, 1.05, 0.6, 0.18, 0.12, 1.22,
          1.61, 0.14, 1.3, 0.61]
 
+
 class TestersTest(unittest.TestCase):
 
     def test_grouped_testers(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         gp_n = 4
         for tst, tp, h, n in ((grs_cusum, .5, 3, 8),
                               (grs_ewma, .5, 2, 9),
@@ -43,10 +43,8 @@ class TestersTest(unittest.TestCase):
                     self.assertEqual(n, i, tst.__name__)
                     break
 
-
     def test_testers(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        base_n = 30
+        print("-- %s(%d): %s --" % get_source_info())
         for tst, tp, h, n in ((pr_ewma, .33, .92, 36),
                               (pr_cusum, .5, 2, 36),
                               (ti_ewma, .33, 2.5, 32),
@@ -57,13 +55,12 @@ class TestersTest(unittest.TestCase):
                     break
 
     def test_grouped_testers_range(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         count = 200
         base_n = 500
         test_n = 100
         gp_n = 5
         sc = 1.1
-        reports = []
         for tst, tp, h in ((grs_cusum, 1, 3.5),
                            (grs_ewma, .15, 2),
                            (gti_cusum, .5, 2.5),
@@ -86,19 +83,16 @@ class TestersTest(unittest.TestCase):
                         eval.count(cr, cp_k, base_n // gp_n, max_ts, h)
             rpt = eval.report()
             rpt.tm = tm.secs
-            reports.append(rpt)
             self.assertTrue(rpt.fp < .02, rpt)
             self.assertTrue(rpt.fn < .35, rpt)
             self.assertTrue(rpt.ttd < 20, rpt)
-        print(OpenRecord.to_text_rows(reports))
 
     def test_testers_range(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         count = 200
         base_n = 300
         test_n = 50
         sc = 1.1
-        reports = []
         for tst, tp, h in ((pr_cusum, .5, 2),
                            (pr_ewma, .15, .92),
                            (ti_cusum, .5, 3.5),
@@ -121,12 +115,10 @@ class TestersTest(unittest.TestCase):
                         eval.count(cr, cp_k, base_n, max_ts, h)
             rpt = eval.report()
             rpt.tm = tm.secs
-            reports.append(rpt)
             self.assertTrue(rpt.fp < .02, rpt)
             self.assertTrue(rpt.fn < .35, rpt)
             self.assertTrue(rpt.ttd < 20, rpt)
-        print(OpenRecord.to_text_rows(reports))
-
+        
 
 if __name__ == '__main__':
     unittest.main()

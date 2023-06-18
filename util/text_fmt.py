@@ -1,7 +1,5 @@
 """ Formats records (dictionaries) into text reports. """
 from collections import OrderedDict
-import datetime as dt
-from decimal import Decimal
 import io
 from .util_tools import is_num, to_str
 

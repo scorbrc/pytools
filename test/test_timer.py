@@ -1,46 +1,43 @@
 import unittest
-import inspect
 import logging
 import os
 from time import sleep
 from util.timer import Timer
-from util.logging_utils import get_logger
+from util.logging_utils import get_logger, get_logger_info
+from util.random_utils import RandomUtils
+from util.util_tools import get_source_info
 
 
 class TimerTest(unittest.TestCase):
 
     def test_timer(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         with Timer() as tm:
             sleep(.5)
         self.assertTrue(tm.secs >= .5)
 
     def test_timer_name_arg(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         with Timer("test") as tm:
             self.assertEqual("test", tm.name)
 
     def test_timer_logger_arg(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        if not os.path.exists('log'):
-            try:
-                os.mkdir('log')
-            except FileExistsError:
-                pass
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s',
-            filename='log/timer_logger_arg.log',
-            filemode='a'
-        )
-        logger = logging.getLogger()
-        with Timer(logger, "test_log") as tm:
-            sleep(.5)
-        with open('log/timer_logger_arg.log') as fi:
+        print("-- %s(%d): %s --" % get_source_info())
+        ru = RandomUtils()
+        app_name = ru.b36(10)
+        #print(get_logger_info())
+        logger = get_logger(app_name, file_dir='log')
+        logger.info("test_timer_logger_arg")
+        for _ in range(3):
+            with Timer(logger, "test_log") as tm:
+                sleep(.05)
+        fp = 'log/%s.log' % app_name
+        with open(fp) as fi:
             content = fi.read()
-            os.remove('log/timer_logger_arg.log')
+            #os.remove(fp)
         self.assertEqual("test_log", tm.name)
         self.assertTrue(str(tm) in content)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,12 +5,12 @@ from collections import OrderedDict
 from copy import deepcopy
 import csv
 import datetime as dt
-from decimal import Decimal
 import io
 import json
 import sys
 import types
 from .text_fmt import to_text_cols, to_text_rows
+from .util_tools import to_str
 
 
 def to_safe_json(x):

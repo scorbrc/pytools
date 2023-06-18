@@ -4,11 +4,9 @@ and cycle. See https://otexts.com/fpp2/holt-winters.html. This implementation
 differs slightly in that cycles are based on type of day, either weekday or
 weekend. This allows capturing weekly and daily cycles with less data.
 """
-from bisect import bisect_left
 from collections import defaultdict
 from math import sqrt
 from util.stat_utils import (
-    mean,
     period_key,
     periods_per_day
 )
@@ -16,6 +14,7 @@ from util.transform import (
     fr_sqrt_trans,
     to_sqrt_trans
 )
+
 
 def hws(dates, values, fc_n=None, sm_coef=None):
     """
@@ -50,14 +49,14 @@ def hws(dates, values, fc_n=None, sm_coef=None):
         a, b, g, d = sm_coef
     else:
         # Default level, trend, season and damper smoothing coefficients.
-        a = 2 / (day_n/12 - 1)
-        b = 2 / (n/2 - 1)
+        a = 2 / (day_n / 12 - 1)
+        b = 2 / (n / 2 - 1)
         g = (day_n * 2) / (n - 1)
         d = 1 - (1 / sqrt(day_n))
 
     # Initialize the model with level, trend and cycle.
-    u1 = wd = wu = sum(obs) / n
-    b1 = sum([obs[i] - obs[i-1] for i in range(n)]) / (n - 1)
+    u1 = wd = sum(obs) / n
+    b1 = sum([obs[i] - obs[i - 1] for i in range(n)]) / (n - 1)
     ss = defaultdict(list)
     for pk, x in zip(pks, obs):
         ss[pk].append(x)

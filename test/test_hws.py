@@ -1,27 +1,26 @@
 import unittest
-import inspect
 from random import randint
 from test_evaluator import TestEvaluator
 from util.charts import chart
 from util.data_generator import change, gen_cycle
 from util.hws import hws
 from util.open_record import OpenRecord
-from util.stat_utils import describe, fit
+from util.stat_utils import describe, fit, mean
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 
 class TestHws(unittest.TestCase):
 
     def test_hws_random(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         day_n = 288
         data_n = day_n * 14
         test_ct = 100
         sc = 2
-        mapes = []
-        mpes = []
-        reports = []
         for h, (low_cr, mid_cr, high_cr) in ((2, (.25, 1.0, 3.0)),):
+            mapes = []
+            mpes = []
             with Timer() as tm:
                 test_name = "hws_%.3f_%.3f_%.3f_%.3f" % (
                     h, low_cr, mid_cr, high_cr)
@@ -51,13 +50,16 @@ class TestHws(unittest.TestCase):
                                   (obs[-day_n * 3:],
                                    eps[-day_n * 3:]))
                 rpt = ev.report()
+            rpt.mpe = mean(mpes)
+            rpt.mape = mean(mapes)
             rpt.millis = tm.millis / test_ct
-            reports.append(rpt)
-        print(OpenRecord.to_text_rows(reports))
-        print(tm)
-        print(OpenRecord.to_text_cols(
-            (describe(mapes, 'mape', full_pcts=True),
-             describe(mpes, 'mpe', full_pcts=True))))
+            self.assertTrue(rpt.fp < .01, rpt)
+            self.assertTrue(rpt.fn < .2, rpt)
+            self.assertTrue(rpt.eff > .9, rpt)
+            self.assertTrue(rpt.ttd < 20, rpt)
+            self.assertTrue(rpt.millis < 100, rpt)
+            self.assertTrue(abs(rpt.mpe) < 10, rpt)
+            self.assertTrue(abs(rpt.mape) < 30, rpt)
 
 
 if __name__ == '__main__':

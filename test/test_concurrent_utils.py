@@ -1,6 +1,5 @@
 import unittest
 import concurrent.futures as cf
-import inspect
 from random import choices, randint, random, weibullvariate
 from string import ascii_letters, digits, punctuation
 from time import sleep, time
@@ -12,6 +11,7 @@ from util.concurrent_utils import (
 )
 from util.stat_utils import pct_diff
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 
 def fib(n):
@@ -70,7 +70,7 @@ def reducer(params):
 class ConcurrentUtilsTest(unittest.TestCase):
 
     def test_map_reduce_default(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = []
         i_ct = 6
         j_ct = 7
@@ -84,7 +84,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertEqual(i_ct * j_ct, stats['map_dedup_keys'])
 
     def test_map_reduce_threads(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = []
         i_ct = 7
         j_ct = 4
@@ -98,7 +98,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertEqual(i_ct * j_ct, stats['map_dedup_keys'])
 
     def test_map_reduce_threads_procs(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = []
         i_ct = 7
         j_ct = 8
@@ -113,7 +113,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertEqual(i_ct * j_ct, stats['map_dedup_keys'])
 
     def test_map_reduce_procs_timeout(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = []
         i_ct = 8
         j_ct = 8
@@ -124,7 +124,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
             results, stats = map_reduce(mapper, reducer, tasks, timeout=1)
 
     def test_run_procs(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [randint(25, 33) for _ in range(50)]
         total_count = 0
         total_results = 0
@@ -135,7 +135,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertTrue(total_results > 1000)
 
     def test_run_threads(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [weibullvariate(.5, 1.5) for _ in range(50)]
         total_count = 0
         total_results = 0
@@ -146,21 +146,21 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertTrue(total_results > 10)
 
     def test_run_threads_timeout(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [.1, .25, .1, .15, .05, .3, 1, .4]
         with self.assertRaises(cf.TimeoutError):
             for x in run_threads(io_worker, tasks, thread_n=3, timeout=1):
                 self.assertTrue(x in tasks)
 
     def test_run_threads_exception(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [.1] * 20 + [-1]
         with self.assertRaises(ValueError):
             for x in run_threads(io_worker, tasks, thread_n=5):
                 pass
 
     def test_run_concurrent_procs(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [{'sleep': random() / 1000,
                   'lower': 20,
                   'upper': 30,
@@ -181,7 +181,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertTrue(pcd > 50, pcd)
 
     def test_run_concurrent_threads(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [{'sleep': .05 + random() / 10,
                   'lower': 10,
                   'upper': 20,
@@ -202,7 +202,7 @@ class ConcurrentUtilsTest(unittest.TestCase):
         self.assertTrue(pcd > 50, pcd)
 
     def test_run_concurrent_exception(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [{'sleep': random() / 10, 'lower': 10, 'upper': 28, 'raise': True}
                  for _ in range(20)]
         with self.assertRaises(RuntimeError):
@@ -210,26 +210,21 @@ class ConcurrentUtilsTest(unittest.TestCase):
                 print(x)
 
     def test_run_concurrent_large(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tasks = [{'sleep': .02 + random() / 4,
                   'lower': 10,
                   'upper': 28,
                   'raise': False}
                  for _ in range(60000)]
         total_wait = sum([task['sleep'] for task in tasks])
-        print("%8s %8s %8s %8s %8s %8s" %
-              ('proc_n', 'thread_n', 'count', 'elapsed', 'th_wait', 'work'))
-        for proc_n in (3, 5, 8):
-            for thread_n in (500, 1000, 2000):
+        for proc_n in (3, 5):
+            for thread_n in (500, 1000):
                 count = 0
                 with Timer() as tm:
                     for x in run_concurrent(
                             request_worker, tasks, proc_n, thread_n):
                         count += len(x)
-                print("%8d %8d %8d %8.3f %8.3f %8.3f" %
-                      (proc_n, thread_n, count, tm.secs,
-                       total_wait / (proc_n * thread_n),
-                       total_wait / tm.secs))
+                self.assertTrue(total_wait / tm.secs > 1000)
 
 
 if __name__ == '__main__':

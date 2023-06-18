@@ -2,7 +2,7 @@
 """
 Run flake8 to find issues and autopep8 and autoflake to attempt to clean
 up issues in sources in-place. Reports modules cleaned-up and modules that
-could not be cleaned-up. 
+could not be cleaned-up.
 """
 from collections import namedtuple
 from subprocess import run

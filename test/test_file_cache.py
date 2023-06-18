@@ -1,9 +1,9 @@
 import unittest
-import inspect
 from random import choices
 import string
 from time import sleep, time
 from util.file_cache import FileCache
+from util.util_tools import get_source_info
 
 
 def random_b36(n_chars):
@@ -14,7 +14,7 @@ def random_b36(n_chars):
 class FileCacheTest(unittest.TestCase):
 
     def test_file_cache(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
 
         # Open file cahce and make sure it is clean.
         count = 1000

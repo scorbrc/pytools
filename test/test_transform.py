@@ -1,5 +1,4 @@
 import unittest
-import inspect
 from random import weibullvariate
 from util.stat_utils import describe
 from util.transform import (
@@ -8,26 +7,27 @@ from util.transform import (
     to_sqrt_trans,
     to_log_trans
 )
+from util.util_tools import get_source_info
 
 
 class TransformTest(unittest.TestCase):
 
     def test_log_trans(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertAlmostEqual(7.4489, to_log_trans(1717), 3)
         for x, y in zip([4.8203, 8.4268, 11.3978],
                         to_log_trans((123, 4567, 89123))):
             self.assertAlmostEqual(x, y, 3)
 
     def test_sqrt_trans(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertAlmostEqual(41.4367, to_sqrt_trans(1717), 3)
         for x, y in zip([11.0905, 67.5796, 298.5348],
                         to_sqrt_trans((123, 4567, 89123))):
             self.assertAlmostEqual(x, y, 3)
 
     def test_log_trans_skew(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         x1 = [weibullvariate(1, .5) for _ in range(20000)]
         x2 = to_log_trans(x1)
         d1 = describe(x1, '1')
@@ -38,7 +38,7 @@ class TransformTest(unittest.TestCase):
         self.assertTrue(cr > 1.5, cr)
 
     def test_sqrt_trans_skew(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         x1 = [weibullvariate(1, .5) for _ in range(20000)]
         x2 = to_sqrt_trans(x1)
         d1 = describe(x1, '1')
@@ -49,12 +49,12 @@ class TransformTest(unittest.TestCase):
         self.assertTrue(cr > 1.5, cr)
 
     def test_log_trans_and_back(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         for x in (0, 1, 2, 4, 8, 16, 32, 64, 2**31):
             self.assertAlmostEqual(x, fr_log_trans(to_log_trans(x)), 2)
 
     def test_sqrt_trans_and_back(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         for x in (0, 1, 2, 4, 8, 16, 32, 64, 2**31):
             self.assertAlmostEqual(x, fr_sqrt_trans(to_sqrt_trans(x)), 2)
 

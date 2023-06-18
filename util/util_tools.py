@@ -1,12 +1,12 @@
 """ Utility tools. """
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from difflib import SequenceMatcher
+from inspect import currentframe, getframeinfo
 from numbers import Number
 import operator
 import os
-import sys
 from typing import Callable
 
 
@@ -55,8 +55,15 @@ def get_env_prompt(env_name):
     return input("%s:" % env_name)
 
 
+def get_source_info():
+    """ Get module name, function and source line number of the caller. """
+    cf = currentframe().f_back
+    tb = getframeinfo(cf)
+    return tb.filename.rpartition('/')[2], tb.lineno, tb.function
+
+
 def is_empty(value, key=None):
-    """ Returns true if 'value' or 'value[key]' has no value(s). """
+    """ Returns true if 'value' or 'value[key]' is None or has no data. """
     test_val = None
     if key is not None and isinstance(value, dict):
         try:
@@ -65,25 +72,15 @@ def is_empty(value, key=None):
             pass
     else:
         test_val = value
-
     if test_val is None:
         return True
-
     if isinstance(test_val, Number):
         return False
-
-    if isinstance(test_val, str):
-        if len(test_val.strip()) == 0 or test_val == 'null':
+    try:
+        if not len(test_val):
             return True
-    else:
-        try:
-            iter(test_val)
-            if len(test_val) == 0:
-                return True
-        except TypeError:
-            pass
-
-    return False
+    except TypeError:
+        return False
 
 
 def is_list(x):
@@ -167,35 +164,11 @@ def to_str(x, digits=3, max_len=120):
     return str(x)
 
 
-class NameTransformer():
-    """
-    Transforms names with any function that accepts a strings and produces
-    a transformed string. Caches the transformation for repeating strings.
-    """
-
-    def __init__(self, trans_fn=to_snake_name):
-        """ Create a name transformer using 'trans_fn'. """
-        self.__trans_fn = trans_fn
-        self.__transformed = {}
-        self.__count = 0
-
-    def __len__(self):
-        return len(self.__transformed)
-
-    def transform(self, name):
-        """ Transform 'name'. """
-        self.__count += 1
-        try:
-            return self.__transformed[name]
-        except KeyError:
-            xn = self.__trans_fn(name)
-            self.__transformed[name] = xn
-            return xn
-
-
 def zero_if_none(x):
-    """ Returns zero(s) for None values. If 'x' is sequence then
-    sequence with Nones replaced by zeros is returned. """
+    """
+    Returns zero(s) for None values. If 'x' is sequence then
+    sequence with Nones replaced by zeros is returned.
+    """
     if is_list(x):
         return [v if v is not None else 0 for v in x]
     else:

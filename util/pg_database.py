@@ -7,7 +7,6 @@ and is not thread-safe.
 from collections import defaultdict
 from contextlib import contextmanager
 import logging
-import psycopg2
 import psycopg2.pool as pp
 from time import perf_counter
 from threading import Lock
@@ -18,8 +17,10 @@ from util.timer import Timer
 MIN_CONNECTIONS = 2
 MAX_CONNECTIONS = 20
 
+
 class DatabaseError(Exception):
     """Wrapper exception for database errors."""
+
     def __init__(self, sql, params=[], root_ex=None):
         self.message = "'%s'" % sql
         if len(params):
@@ -126,10 +127,10 @@ class Database:
 
     def __str__(self):
         return "Database(user='%s',database=%s,in_use=%d,max_in_use=%d)" % \
-           (self.__user,
-            self.__database,
-            self.__in_use,
-            self.__max_in_use)
+            (self.__user,
+             self.__database,
+             self.__in_use,
+             self.__max_in_use)
 
 
 class DatabaseConnection:
@@ -236,7 +237,7 @@ class DatabaseConnection:
                 elif isinstance(sql, list):
                     for s in sql:
                         self.__cursor.execute(s)
-                        ct += cursor.rowcount
+                        ct += self.__cursor.rowcount
                 else:
                     raise DatabaseError("Invalid sql type '%s'" % type(sql))
             oper = sql.strip().partition(' ')[0]

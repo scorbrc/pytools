@@ -1,5 +1,4 @@
 import unittest
-import inspect
 from random import choice, randint
 from util.data_generator import change, gen_cycle
 from test_evaluator import TestEvaluator
@@ -8,18 +7,17 @@ from util.mps import mps
 from util.open_record import OpenRecord
 from util.stat_utils import (
     fit,
-    mean,
-    median,
-    trim_mean
+    mean
 )
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 
 class TestMps(unittest.TestCase):
 
     def test_mps(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        count = 50
+        print("-- %s(%d): %s --" % get_source_info())
+        count = 100
         day_n = 288
         data_n = day_n * 14
         data_sets = [gen_cycle(
@@ -27,13 +25,12 @@ class TestMps(unittest.TestCase):
             day_n,
             data_n,
             cycle='mid',
-            sc=1.1
-        ) for _ in range(count*3)]
-        reports = []
-        for h, win_mins, ts_mins in ((.94, 180, 60),
-                                     (.94, 120, 60),
-                                     (.94, 180, 90),
-                                     (.94, 120, 90)):
+            sc=1.5
+        ) for _ in range(count * 3)]
+        for h, win_mins, ts_mins in ((.96, 180, 60),
+                                     (.96, 120, 60),
+                                     (.96, 180, 90),
+                                     (.96, 120, 90)):
             test_name = 'mps_%d_%d' % (win_mins, ts_mins)
             eval = TestEvaluator(test_name)
             mpes = []
@@ -64,15 +61,12 @@ class TestMps(unittest.TestCase):
             rpt.mpe = mean(mpes)
             rpt.mape = mean(mapes)
             rpt.millis = tm.millis / (count * 3)
-            if False:
-                self.assertTrue(abs(rpt.mpe) < 10)
-                self.assertTrue(rpt.mape < 50)
-                self.assertTrue(rpt.fp < .01)
-                self.assertTrue(rpt.fn < .1)
-                self.assertTrue(rpt.eff > .8)
-                self.assertTrue(rpt.ttd < 15)
-            reports.append(rpt)
-        print(OpenRecord.to_text_rows(reports, digits=4))
+            self.assertTrue(abs(rpt.mpe) < 10, rpt)
+            self.assertTrue(rpt.mape < 30, rpt)
+            self.assertTrue(rpt.fp < .01, rpt)
+            self.assertTrue(rpt.fn < .1, rpt)
+            self.assertTrue(rpt.eff > .8, rpt)
+            self.assertTrue(rpt.ttd < 15, rpt)
 
 
 if __name__ == '__main__':

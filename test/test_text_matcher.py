@@ -1,13 +1,13 @@
 import unittest
-import inspect
 from util.text_matcher import TextMatcher
 from util.timer import Timer
+from util.util_tools import get_source_info
 
 
 class TextMatcherTest(unittest.TestCase):
 
     def test_default_matching(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tx = TextMatcher()
         for w1, w2, es in (('trythis', 'thythis', 0.85714),
                            ('OneOverMany', 'OneOverManyMore', 0.6923),
@@ -17,7 +17,7 @@ class TextMatcherTest(unittest.TestCase):
             self.assertAlmostEqual(es, sc, 3)
 
     def test_base_ref_matching(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tx = TextMatcher(match_type=TextMatcher.MatchType.BASE_REF)
         for w1, w2, es in (('trythis', 'thythis', 0.85714),
                            ('OneOverMany', 'OneOverManyMore', 0.7333),
@@ -28,7 +28,7 @@ class TextMatcherTest(unittest.TestCase):
             self.assertAlmostEqual(es, sc, 3)
 
     def test_source_ref_matching(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tx = TextMatcher(match_type=TextMatcher.MatchType.SOURCE_REF)
         for w1, w2, es in (('trythis', 'thythis', 0.85714),
                            ('OneOverMany', 'OneOverManyMore', 0.6363),
@@ -39,21 +39,21 @@ class TextMatcherTest(unittest.TestCase):
             self.assertAlmostEqual(es, sc, 3)
 
     def test_case_sensitivity(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         score = TextMatcher(case_sensitive=False).match('November', 'november')
         self.assertAlmostEqual(1.0, score, 3)
         score = TextMatcher(case_sensitive=True).match('November', 'november')
         self.assertAlmostEqual(0.875, score, 3)
 
     def test_word_length(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         score = TextMatcher(min_size=2).match('at', 'ate')
         self.assertAlmostEqual(.6, score, 3)
         score = TextMatcher(min_size=3).match('at', 'ate')
         self.assertAlmostEqual(0, score, 3)
 
     def test_words_special(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         tx = TextMatcher()
         for w1, w2, es in (('for - this - one', 'for/this/one', 1.0),
                            (' blanks ', 'blanks', 1.0),
@@ -62,7 +62,7 @@ class TextMatcherTest(unittest.TestCase):
             self.assertAlmostEqual(es, sc, 3)
 
     def test_many_words(self):
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         words = """
         Call me Ishmael. Some years ago — never mind how long
         precisely — having little or no money in my purse, and nothing
@@ -94,10 +94,10 @@ class TextMatcherTest(unittest.TestCase):
                         if sc > 0:
                             results.append((w1, w2, sc))
                             scores.append(sc)
-        print(tx, tm)
         self.assertAlmostEqual(0.04, min(scores), 3)
         self.assertAlmostEqual(0.2243, sum(scores) / len(scores), 3)
         self.assertAlmostEqual(1.0, max(scores), 3)
+        self.assertTrue(tm.secs < .2, tm)
 
 
 if __name__ == '__main__':

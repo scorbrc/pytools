@@ -1,5 +1,4 @@
 import unittest
-import inspect
 import datetime as dt
 from dateutil import tz
 from random import randint
@@ -16,11 +15,13 @@ from util.time_utils import (
     truncate_to_minute,
     truncate_to_second
 )
+from util.util_tools import get_source_info
+
 
 class TimeUtilsTest(unittest.TestCase):
 
     def test_days_from_month(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         sdt, edt = days_from_month(to_utc('2014-04-01'))
         self.assertEqual(0, sdt)
         self.assertEqual(30, edt)
@@ -32,8 +33,8 @@ class TimeUtilsTest(unittest.TestCase):
         self.assertEqual(1, edt)
 
     def test_examples(self):
-        print('-- %s --' % inspect.stack()[0][3])
-        now = dt.datetime.now()
+        print("-- %s(%d): %s --" % get_source_info())
+        dt.datetime.now()
         adt = tz.tzoffset('ADT', 10800)
         ast = tz.tzoffset('AST', 14400)
         self.assertEqual(
@@ -68,12 +69,12 @@ class TimeUtilsTest(unittest.TestCase):
             str(to_local('2010-02-15T12:00:00 HST')))
 
     def test_last_day_in_week(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         self.assertEqual(
             '2023-04-30', last_day_in_week('2023-04-27').strftime('%Y-%m-%d'))
 
     def test_to_local(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d1 = to_local()
         self.assertTrue(is_tz_aware(d1))
         d2 = dt.datetime.now()
@@ -91,7 +92,7 @@ class TimeUtilsTest(unittest.TestCase):
         self.assertEqual(17, d7.hour)
 
     def test_to_local_many(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         edt = dt.datetime.now()
         cdt = edt - dt.timedelta(days=365)
         while cdt < edt:
@@ -102,7 +103,7 @@ class TimeUtilsTest(unittest.TestCase):
             cdt += dt.timedelta(days=randint(1, 15))
 
     def test_to_utc(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d1 = to_utc()
         self.assertTrue(is_tz_aware(d1))
         d2 = dt.datetime.utcnow()
@@ -125,7 +126,7 @@ class TimeUtilsTest(unittest.TestCase):
         self.assertEqual(17, d8.hour)
 
     def test_to_utc_many(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         edt = dt.datetime.utcnow()
         cdt = edt - dt.timedelta(days=365)
         while cdt < edt:
@@ -136,25 +137,25 @@ class TimeUtilsTest(unittest.TestCase):
             cdt += dt.timedelta(days=randint(1, 15))
 
     def test_truncate_day(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d = truncate_to_day(to_local('2020-02-22T13:17:19'))
         self.assertEqual(0, d.hour)
         self.assertEqual(22, d.day)
 
     def test_truncate_hour(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d = truncate_to_hour(to_local('2020-02-22T13:17:19'))
         self.assertEqual(13, d.hour)
         self.assertEqual(0, d.minute)
 
     def test_truncate_minute(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d = truncate_to_minute(to_local('2020-02-22T13:17:19'))
         self.assertEqual(0, d.second)
         self.assertEqual(17, d.minute)
 
     def test_truncate_second(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         d = truncate_to_second(to_utc('2020-02-22T13:17:19.123'))
         self.assertEqual(0, d.microsecond)
 

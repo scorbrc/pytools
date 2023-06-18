@@ -1,15 +1,14 @@
 import unittest
 from collections import OrderedDict
 import datetime as dt
-import inspect
 from util.text_fmt import to_text_cols, to_text_rows
+from util.util_tools import get_source_info
 
 
 class TextFmtTest(unittest.TestCase):
 
     def test_format_text_table_horizontal(self):
-        print('-' * 80)
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         recs = [OrderedDict(name='first',
                             value1=1.23,
                             value2=456,
@@ -27,8 +26,7 @@ class TextFmtTest(unittest.TestCase):
         self.assertEqual(4, len(content.split('\n')[0].split()), content)
 
     def test_format_text_table_vertical(self):
-        print('-' * 80)
-        print(inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         recs = [OrderedDict(name='first',
                             value1=1.23,
                             value2=456,

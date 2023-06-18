@@ -1,7 +1,8 @@
 import unittest
-import inspect
 from subprocess import Popen, PIPE
+from util.logging_utils import setup_root_logger
 from util.pg_database import Database
+from util.util_tools import get_source_info
 
 DBNAME = 'test_db'
 DBUSER = 'test_user'
@@ -26,6 +27,7 @@ create user test_user with encrypted password '{DBPWD}';
 grant all privileges on database {DBNAME} to {DBUSER};
 """
 
+
 def init_db():
     sql = CREATE_SQL
     proc = Popen('psql', stdout=PIPE, stderr=PIPE, stdin=PIPE, shell=True)
@@ -37,13 +39,13 @@ def init_db():
 class DatabaseTest(unittest.TestCase):
 
     def setUp(self):
+        setup_root_logger()
         init_db()
 
     def test_create_insert(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         with Database(DBUSER, DBPWD, DBNAME) as db:
             with db.connection() as dbconn:
-                sql = "create table data (id int, field text)"
                 dbconn.update("create table data (id int, field text)")
                 dbconn.update("insert into data values (1, 'x')")
                 dbconn.update("insert into data values (2, 'y')")
@@ -59,11 +61,11 @@ class DatabaseTest(unittest.TestCase):
                 self.assertEqual('y', recs[1].field)
 
     def test_func(self):
-        print('-- %s --' % inspect.stack()[0][3])
+        print("-- %s(%d): %s --" % get_source_info())
         with Database(DBUSER, DBPWD, DBNAME) as db:
             with db.connection() as dbconn:
                 dbconn.update(CREATE_PROC)
-                dbconn.commit();
+                dbconn.commit()
                 rec = dbconn.query_one('select addxy(2.32, 5.85)')
                 self.assertAlmostEqual(8.17, rec.addxy, .001)
 

@@ -1,10 +1,6 @@
 """ Functions for finding a smoothed line among a time-series or values. """
-from collections import deque
 from math import ceil, sqrt
-from util.stat_utils import (
-    mean,
-    trim_mean
-)
+from util.stat_utils import trim_mean
 
 
 def front_load(i, f):
@@ -66,49 +62,6 @@ def ghf(data, g=.1, h=.01):
         er = x0 - (x1 + dx)
         dx = dx + front_load(i, h) * er
         x1 = x1 + dx + front_load(i, g) * er
-
-
-def xhws(data, pd_n, fc_n=3, a=.2, b=.01, g=.3, d=.9):
-    a, b, g, d = [min(max(f, 1e-6), 1 - 1e-6) for f in (a, b, gf, d)]
-    u1 = b1 = 1
-    ss = [1] * pd_n
-    eps = [0] * fc_n
-    for i, x in enumerate(data):
-        yield eps[i] if i >= pd_n else x
-        u0 = u1
-        b0 = b1 * d
-        u1 = smooth(i, a, x - ss[i%pd_n], u0 + b0)
-        b1 = smooth(i, b, u1 - u0, b1)
-        ss[i%pd_n] = smooth(i // pd_n, g, x - - u0 - b0, ss[i%pd_n])
-        eps.append(max(u1 + (b1 * fc_n) + ss[(i+fc_n)%pd_n], 0))
-
-
-def hws_pd(dates, data):
-
-    pks = [period_key(d) for d in dates]
-    day_n = periods_per_day(dates)
-    fc_n = day_n // 8
-
-    a = 1 / sqrt(day_n)
-    b = 1 / sqrt(n)
-    g = (day_n * 2) / (n - 1)
-    d = 1 - (1 / sqrt(day_n))
-
-    u1 = b1 = 1
-    ss = []
-    for pk in pks:
-        ss[pk] = 1
-
-    ys = deque([0] * fc_n)
-    for i, x in enumerate(data):
-        yield ys[i] if i >= day_n else x
-        u0 = u1
-        b0 = b1 * d
-        u1 = smooth(i, a, x - ss[pks[t]], u0 + b0)
-        b1 = smooth(i, b, u1 - u0, b1)
-        ss[pks[t]] = smooth(i // day_n, g, x - u0 - b0, ss[pks[t]])
-        ys.popleft()
-        ys.append(max(u1 + (b1 * fc_n) + ss[pks[t + fc_n]], 0))
 
 
 def kfs(data, a=.05):
