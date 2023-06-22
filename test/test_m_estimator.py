@@ -1,7 +1,7 @@
 import unittest
 from random import weibullvariate
+import numpy as np
 from util.m_estimator import m_estimate
-from util.stat_utils import mean
 from util.timer import Timer
 from util.util_tools import get_source_info
 
@@ -23,7 +23,7 @@ class MEstimatorTest(unittest.TestCase):
     def test_m_estimate_1a(self):
         print("-- %s(%d): %s --" % get_source_info())
         me, se, wt = m_estimate(DATA1, 3)
-        self.assertTrue(me < mean(DATA1))
+        self.assertTrue(me < np.mean(DATA1))
         self.assertAlmostEqual(4.4194, me, 3)
         self.assertAlmostEqual(0.8814, se, 3)
         self.assertEqual(1, wt[24])
@@ -32,7 +32,7 @@ class MEstimatorTest(unittest.TestCase):
     def test_m_estimate_1b(self):
         print("-- %s(%d): %s --" % get_source_info())
         me, se, wt = m_estimate(DATA1, 4)
-        self.assertTrue(me < mean(DATA1))
+        self.assertTrue(me < np.mean(DATA1))
         self.assertAlmostEqual(4.984, me, 3)
         self.assertAlmostEqual(1.0605, se, 3)
         self.assertEqual(1, wt[24])
@@ -41,7 +41,7 @@ class MEstimatorTest(unittest.TestCase):
     def test_m_estimate_2(self):
         print("-- %s(%d): %s --" % get_source_info())
         me, se, wt = m_estimate(DATA2, 2)
-        self.assertTrue(me < mean(DATA2))
+        self.assertTrue(me < np.mean(DATA2))
         self.assertAlmostEqual(2.9726, me, 3)
         self.assertAlmostEqual(0.2734, se, 3)
         wt = sorted(wt)
@@ -73,7 +73,7 @@ class MEstimatorTest(unittest.TestCase):
                         me, se, _ = m_estimate(data, cf)
                         mes.append(me)
                         ses.append(se)
-                self.assertTrue(mean(ses) / mean(mes) < .3)
+                self.assertTrue(np.mean(ses) / np.mean(mes) < .3)
                 self.assertTrue(tm.secs < .2, tm)
 
 

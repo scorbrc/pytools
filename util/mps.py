@@ -7,8 +7,8 @@ timeseries.
 from bisect import bisect_left
 from collections import defaultdict, deque
 from math import sqrt
+import numpy as np
 from util.stat_utils import (
-    median,
     period_key,
     period_truncate,
     periods_per_day
@@ -59,7 +59,7 @@ def mps(dates, values, win_mins=180, test_mins=60):
         pk = periods[i]
         if pk in pd_values and len(pd_values[pk]) >= 3:
             # Estimate smoothed value.
-            estimates[i] = median(pd_values[pk])
+            estimates[i] = np.median(pd_values[pk])
             dx = values[i] - estimates[i]
             stage.append(dx)
             if len(stage) == ref_n:

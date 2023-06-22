@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 from util.data_generator import gen_dates
 from util.charts import chart
 from util.data_generator import gen_flat
@@ -9,10 +10,7 @@ from util.smoothers import (
     ses,
     sma
 )
-from util.stat_utils import (
-    fit,
-    mean
-)
+from util.stat_utils import fit
 from util.timer import Timer
 from util.util_tools import get_source_info
 
@@ -34,8 +32,9 @@ class TestSmoothers(unittest.TestCase):
                 mape, mpe = fit(obs, eps)
                 mapes.append(mape)
                 mpes.append(mpe)
-            mpe = mean(mpes)
-            mape = mean(mapes)
+            mpe = np.mean(mpes)
+            mape = np.mean(mapes)
+            print("%-10s %7.3f %7.3f" % (sfn.__name__, mpe, mape))
             self.assertTrue(
                 abs(mpe) < 10,
                 "Expected %s mpe < 5: %.3f" % (sfn.__name__, mpe))
@@ -59,8 +58,9 @@ class TestSmoothers(unittest.TestCase):
                     mape, mpe = fit(obs, eps)
                     mapes.append(mape)
                     mpes.append(mpe)
-            mpe = mean(mpes)
-            mape = mean(mapes)
+            mpe = np.mean(mpes)
+            mape = np.mean(mapes)
+            print("%-10s %7.3f %7.3f" % (sfn.__name__, mpe, mape))
             self.assertTrue(
                 abs(mpe) < 15,
                 "Expected %s mpe < 5: %.3f" % (sfn.__name__, mpe))

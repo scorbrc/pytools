@@ -2,14 +2,10 @@
 Functions for finding changepoints in a time-series of data.
 """
 from math import sqrt
+import numpy as np
+import scipy.stats as ss
 from util.open_record import OpenRecord
-from util.stat_utils import (
-    mean,
-    median,
-    pct_diff,
-    rankdata,
-    std
-)
+from util.stat_utils import pct_diff, rankdata
 from util.transform import to_sqrt_trans
 
 
@@ -89,10 +85,10 @@ def ti_cpd(data):
     """
     n = len(data)
     cp_k = max_ts = 0
-    sd = std(data)
+    sd = np.std(data, ddof=1)
     for k in range(14, n - 4):
-        u0 = mean(data[:k])
-        u1 = mean(data[k:])
+        u0 = sum(data[:k]) / k
+        u1 = sum(data[k:]) / (n - k)
         ts = ((u1 - u0) / (sd * 2)) * sqrt((k * (n - k)) / n)
         if abs(ts) > abs(max_ts):
             cp_k = k
@@ -116,7 +112,7 @@ def rs_cpd_multi(data, cpd_h=3, min_pcd=10, min_search_n=30):
     median of the after values, percentage difference between before
     and after and test score correspondiong to 'cpd_h'.
     """
-    cps = _find_cps_(rs_cpd, median, data, cpd_h, min_pcd, 0, min_search_n, [])
+    cps = _find_cps_(rs_cpd, np.median, data, cpd_h, min_pcd, 0, min_search_n, [])
     return sorted(cps, key=lambda cp: cp.ci)
 
 
@@ -137,5 +133,5 @@ def ti_cpd_multi(data, cpd_h=3, min_pcd=10, min_search_n=30):
     and after and test score correspondiong to 'cpd_h'.
     """
     data = to_sqrt_trans(data)
-    cps = _find_cps_(ti_cpd, mean, data, cpd_h, min_pcd, 0, min_search_n, [])
+    cps = _find_cps_(ti_cpd, np.mean, data, cpd_h, min_pcd, 0, min_search_n, [])
     return sorted(cps, key=lambda cp: cp.ci)

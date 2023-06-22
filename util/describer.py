@@ -1,9 +1,6 @@
 from collections import deque
-from util.base_stats import (
-    mean,
-    percentile,
-    std
-)
+import numpy as np
+import scipy.stats as ss
 from util.open_record import OpenRecord
 
 MAX_VALUES = 50000
@@ -34,9 +31,9 @@ def describe(data, name='desc', full_pcts=False):
             ds['p%03d' % (p * 10)] = 0
     if n >= 3:
         try:
-            ds.mu = mean(data)
-            ds.sd = std(data)
-            for p, v in zip(pcts, percentile(data, pcts)):
+            ds.mu = np.mean(data)
+            ds.sd = np.std(data, ddof=1)
+            for p, v in zip(pcts, np.percentile(data, pcts)):
                 if isinstance(p, int):
                     ds['p%02d' % p] = v
                 else:

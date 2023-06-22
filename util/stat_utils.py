@@ -5,18 +5,9 @@ from bisect import bisect_left
 from collections import defaultdict
 import datetime as dt
 from math import ceil, copysign, exp, floor, sqrt
-from .base_stats import (
-    mean,
-    percentile,
-    rankdata,
-    std,
-    stderr
-)
+import numpy as np
 from .open_record import OpenRecord
-
-MIN_SCORE = -6 + 1e-6
-MAX_SCORE = 6 + 1e-6
-PERCENTILES = (0, .1, .5, 1, 5, 10, 25, 50, 75, 90, 95, 99, 99.5, 99.9, 100)
+from .util_tools import zero_if_none
 
 
 def arl(k, h):
@@ -27,41 +18,6 @@ def arl(k, h):
 def c4(n):
     """ Correction for small sample sizes as used in control charting. """
     return (4 * max(n, 2) - 4) / (4 * max(n, 2) - 3)
-
-
-def describe(data, name='desc', full_pcts=False):
-    """
-    Descriptive statistics for 'data' with label 'name'. Use 'full_pcts' to
-    produce both lower and upper percentiles.
-    n - number of values
-    mu - arithmetic mean
-    sd - standard deviation
-    cv - coefficient of variation: sd/mu
-    kr - kurtosis
-    p00, p005 ... p50 ... p995, p100 are the percentiles.
-    """
-    n = len(data)
-    ds = OpenRecord(name=name, n=n, mu=0, sd=0)
-    pcts = PERCENTILES
-    if not full_pcts:
-        pcts = pcts[7:]
-    for p in pcts:
-        if isinstance(p, int):
-            ds['p%02d' % p] = 0
-        else:
-            ds['p%03d' % (p * 10)] = 0
-    if n >= 3:
-        try:
-            ds.mu = mean(data)
-            ds.sd = std(data)
-            for p, v in zip(pcts, percentile(data, pcts)):
-                if isinstance(p, int):
-                    ds['p%02d' % p] = v
-                else:
-                    ds['p%03d' % (p * 10)] = v
-        except FloatingPointError:
-            pass
-    return ds
 
 
 def fit(obs, eps):
@@ -82,20 +38,6 @@ def fit(obs, eps):
     except FloatingPointError:
         pass
     return mape / len(obs), mpe / len(obs)
-
-
-def median(data):
-    """ The 50th peercentile value in 'data'. """
-    md = 0
-    n = len(data)
-    if n:
-        xs = sorted(data)
-        m = n // 2
-        if n % 2 == 1:
-            md = xs[m]
-        else:
-            md = (xs[m] + xs[m - 1]) / 2
-    return md
 
 
 def mk_trend(data):
@@ -138,22 +80,22 @@ def pct_diff(x, y):
 
 def p50(data):
     """ The 50th peercentile value in 'data'. """
-    return percentile(data, 50)
+    return np.percentile(data, 50)
 
 
 def p90(data):
     """ The 90th peercentile value in 'data'. """
-    return percentile(data, 90)
+    return np.percentile(data, 90)
 
 
 def p95(data):
     """ The 95th peercentile value in 'data'. """
-    return percentile(data, 95)
+    return np.percentile(data, 95)
 
 
 def p99(data):
     """ The 99th peercentile value in 'data'. """
-    return percentile(data, 99)
+    return np.percentile(data, 99)
 
 
 def period_key(date):
@@ -187,55 +129,20 @@ def period_secs(dates):
     return psecs
 
 
-def pscores(data):
+def rankdata(data):
     """
-    Convert 'data' to percentile scores (-1 <= pscore <= 1). Use average rank
-    for duplicate values.
+    Ranks values in 'data' from 0 to n - 1 using average rank for ties.
     """
-    n = len(data) + .5
-    return [((r / n) - .5) * 2 for r in rankdata(data)]
-
-
-def rs_test(base, test):
-    """
-    Rank sums test comparing 'base' values to 'test' values. Each must have
-    at least 4 values and 12 overall values. Average rank used for ties.
-    Returns a normalized test score.
-    """
-    n = len(base)
-    m = len(test)
-    if n >= 4 and m >= 4 and n + m >= 12:
-        bx = sorted(base)
-        rs = 0
-        for x in test:
-            i = bisect_left(bx, x)
-            c = bx.count(x)
-            rs += i + (c / 2) - (n / 2)
-        return rs / sqrt((n * m * (n + m + 1)) / 12)
-    return 0
-
-
-def tcf(n, z):
-    """
-    Adjusts score 'z' down by the approximate T critical value with 'n'
-    degrees of freedom. The greater 'n' is the less the correction will be.
-    """
-    return (z * 2) - (z + ((z**3 + z) / (4 * n)) +
-                      (((5 * z**5) + (16 * z**3) + (3 * z)) / (96 * n**2)))
-
-
-def ti_test(base, test):
-    """
-    Independent T test comparing 'base' values to 'test' values. Each must have
-    at least 4 values with 12 overall values. Returns a normalized test score.
-    """
-    m = len(test)
-    n = len(base)
-    if n < 4 or m < 4 or n + m < 12:
-        return 0
-    se = (stderr(base) * (n / (n + m))) + (stderr(test) * (m / (n + m)))
-    zs = ((mean(test) - mean(base)) / (se * 2))
-    return tcf(n + m - 2, zs)
+    dd = {}
+    for i, x in enumerate(sorted(zero_if_none(data))):
+        if x is None:
+            x = 0
+        try:
+            s, c = dd[x]
+            dd[x] = (s + i + 1, c + 1)
+        except KeyError:
+            dd[x] = (i + 1, 1)
+    return [dd[x][0] / dd[x][1] for x in data]
 
 
 def t_limits(n, p):
@@ -266,7 +173,7 @@ def trim_mean(data, tp=.2):
     At least three values needed.
     """
     tp = min(max(tp, 0), .33)
-    return mean(trim(data, tp))
+    return np.mean(trim(data, tp))
 
 
 def winsorize(data, wp=.25):
@@ -288,7 +195,7 @@ def w_std(data, wp=.2):
     """
     wp = min(max(wp, 0), .33)
     wx = winsorize(data, wp)
-    return std(wx)
+    return np.std(wx, ddof=1)
 
 
 def w_stderr(data, wp=.2):
@@ -297,7 +204,7 @@ def w_stderr(data, wp=.2):
     """
     wp = min(max(wp, 0), .33)
     wx = winsorize(data, wp)
-    sd = std(wx)
+    sd = np.std(wx, ddof=1)
     return sd / (sqrt(len(data) * (1 - (wp * 2))))
 
 
@@ -326,15 +233,3 @@ def wx_test(test, base=None):
         elif x < 0:
             rs -= i + 1
     return rs / sqrt(((n * (n + 1)) * ((2 * n) + 1)) / 12)
-
-
-def zscores(data):
-    """
-    Convert 'data', which must have at least three values, to Z scores with
-    mean of 0 and standard deviation of 1.
-    """
-    if len(data) < 3:
-        return [0] * len(data)
-    u = mean(data)
-    s = std(data)
-    return [(x - u) / s for x in data]

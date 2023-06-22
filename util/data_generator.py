@@ -3,7 +3,7 @@ Data generator functions.
 """
 import datetime as dt
 from math import cos, pi, sin
-from random import choice, random, randint, weibullvariate
+from random import choice, normalvariate, random, randint, weibullvariate
 import numpy as np
 
 
@@ -97,15 +97,6 @@ def gen_cycle(mu, day_n, data_n, last_date=None,
     return dates, values
 
 
-def gen_flat(mu, day_n, data_n, last_date=None, sc=2, trend_f=None):
-    dates = gen_dates(day_n, data_n)
-    values = [weibullvariate(mu, sc) for _ in range(data_n)]
-    if trend_f is not None:
-        values = trend(values, trend_f)
-    values = [max(x, 0) for x in adjust_mean(values, mu)]
-    return dates, values
-
-
 def gen_dates(day_n, data_n, last_date=None):
     dates = []
     secs = (60 * 60 * 24) / day_n
@@ -117,6 +108,16 @@ def gen_dates(day_n, data_n, last_date=None):
     for i in range(data_n):
         dates.append(now - dt.timedelta(seconds=secs * (data_n - i)))
     return dates
+
+
+def gen_flat(mu, day_n, data_n, last_date=None, sc=2, trend_f=None):
+    dates = gen_dates(day_n, data_n)
+    values = [normalvariate(mu/2, mu/6) + weibullvariate(mu/2, sc)
+              for _ in range(data_n)]
+    if trend_f is not None:
+        values = trend(values, trend_f)
+    values = [max(x, 0) for x in adjust_mean(values, mu)]
+    return dates, values
 
 
 def rand_pair(lv, uv):

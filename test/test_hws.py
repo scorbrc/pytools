@@ -1,11 +1,13 @@
 import unittest
+import numpy as np
 from random import randint
 from test_evaluator import TestEvaluator
 from util.charts import chart
 from util.data_generator import change, gen_cycle
+from util.describer import describe
 from util.hws import hws
 from util.open_record import OpenRecord
-from util.stat_utils import describe, fit, mean
+from util.stat_utils import fit
 from util.timer import Timer
 from util.util_tools import get_source_info
 
@@ -50,8 +52,8 @@ class TestHws(unittest.TestCase):
                                   (obs[-day_n * 3:],
                                    eps[-day_n * 3:]))
                 rpt = ev.report()
-            rpt.mpe = mean(mpes)
-            rpt.mape = mean(mapes)
+            rpt.mpe = np.mean(mpes)
+            rpt.mape = np.mean(mapes)
             rpt.millis = tm.millis / test_ct
             self.assertTrue(rpt.fp < .01, rpt)
             self.assertTrue(rpt.fn < .2, rpt)

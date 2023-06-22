@@ -1,5 +1,6 @@
 from math import sqrt
-from util.stat_utils import median, pct_diff, std
+import numpy as np
+from util.stat_utils import pct_diff
 
 
 def m_estimate(data, cf=2):
@@ -11,8 +12,8 @@ def m_estimate(data, cf=2):
     n = len(data)
     if n < 5:
         raise ValueError("Not enough data.")
-    m1 = median(data)
-    md = median([abs(x - m1) for x in data])
+    m1 = np.median(data)
+    md = np.median([abs(x - m1) for x in data])
     tv = md * cf
     wt = [1] * n
     for k in range(12):
@@ -27,5 +28,5 @@ def m_estimate(data, cf=2):
         m1 = ws / n
         if m0 + m1 > 0 and abs(pct_diff(m1, m0)) < .01:
             break
-    se = std([x * w for x, w in zip(data, wt)], m1) / sqrt(wt.count(1))
+    se = np.std([x * w for x, w in zip(data, wt)], ddof=1) / sqrt(wt.count(1))
     return m1, se, wt

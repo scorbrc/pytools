@@ -5,12 +5,9 @@ T-based uses a given mean and standard error of mean function. By default this
 is mean and stderr. The more robust t_mean and w_stderr can be used.
 """
 from math import ceil, sqrt
+import numpy as np
+import scipy.stats as ss
 from random import choices
-from util.stat_utils import (
-    mean,
-    percentile,
-    stderr
-)
 
 
 def conf_limits(n, cp):
@@ -35,7 +32,7 @@ def repls(n, bn=30, br=2000):
     return min(max(ceil(((br * bn) / (n * br)) * br), bn), br)
 
 
-def p_conf(data, cp=.99, agg_fn=mean):
+def p_conf(data, cp=.99, agg_fn=np.mean):
     """
     Percentile based bootstrapped confidence interval using resampling to
     calculate lower and upper limits that will reflect the distribution of
@@ -54,11 +51,11 @@ def p_conf(data, cp=.99, agg_fn=mean):
         for i in range(repl_n):
             bx = choices(data, k=len(data))
             stats.append(agg_fn(bx))
-        lc, uc = percentile(stats, conf_limits(len(data), cp))
+        lc, uc = np.percentile(stats, conf_limits(len(data), cp))
     return lc, uc
 
 
-def t_conf(data, cp=.99, loc_fn=mean, var_fn=stderr):
+def t_conf(data, cp=.99, loc_fn=np.mean, var_fn=ss.sem):
     """
     T based bootstrapped confidence interval using resampling to calculate lower
     and upper limits that will reflect the distribution of values in 'data'.
@@ -78,7 +75,7 @@ def t_conf(data, cp=.99, loc_fn=mean, var_fn=stderr):
             se = var_fn(x1)
             tss.append((loc_fn(x1) - u0) / se if se > 0 else 0)
         a = (1 - cp) / 2
-        t0, t1 = percentile(tss, (a * 100, (1 - a) * 100))
+        t0, t1 = np.percentile(tss, (a * 100, (1 - a) * 100))
         lc = u0 - s0 * t1
         uc = u0 - s0 * t0
     return lc, uc

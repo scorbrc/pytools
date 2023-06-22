@@ -3,13 +3,13 @@ A/B testing for comparing last so many after test values to a matching set of
 before values.
 """
 import datetime as dt
+import numpy as np
+import scipy.stats as ss
 from util.open_record import OpenRecord
 from util.stat_utils import fit
-from util.stat_utils import median
 from util.stat_utils import pct_diff
 from util.stat_utils import period_key
 from util.stat_utils import periods_per_day
-from util.stat_utils import rs_test
 from util.util_tools import zero_if_none
 
 
@@ -91,11 +91,11 @@ def ab_test(name,
                         break
 
             # Test after values against before values.
-            test.before = median(data_set.b_values)
-            test.after = median(data_set.a_values)
+            test.before = np.median(data_set.b_values)
+            test.after = np.median(data_set.a_values)
             test.mape, test.mpe = fit(data_set.b_values, test.before)
             test.pct_diff = pct_diff(test.after, test.before)
-            test.score = rs_test(data_set.b_values, data_set.a_values)
+            test.score = ss.ranksums(data_set.a_values, data_set.b_values)[0]
             test.is_under = False
             test.is_over = False
             if abs(test.pct_diff) > min_pcd:

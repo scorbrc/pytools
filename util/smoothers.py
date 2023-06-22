@@ -3,6 +3,12 @@ from math import ceil, sqrt
 from util.stat_utils import trim_mean
 
 
+def def_coef(cf, dx):
+    if cf is None:
+        return dx
+    return min(max(cf, 1e-6), 1 - 1e-6)
+
+
 def front_load(i, f):
     """
     front load smoothing coefficient or scaling factor 'f' based on period
@@ -20,13 +26,16 @@ def smooth(i, f, x, y):
     return (a * x) + ((1 - a) * y)
 
 
-def des(data, a=.2, b=.02, d=.9):
+def des(data, a=None, b=None, d=None):
     """
     Double exponential smoothing of level and trend for values in 'data',
     where 'a' the smoothing coefficent for the level, 'b' is the smoothing
     coefficient for the trend and 'd' is a damping coefficient.
     """
-    a, b, d = [min(max(f, 1e-6), 1 - 1e-6) for f in (a, b, d)]
+    n = len(data)
+    a = def_coef(a, 2 / sqrt(n))
+    b = def_coef(b, 2 / (n / 2 - 1))
+    d = def_coef(d, 1 - (1 / sqrt(n)))
     u1 = b1 = 1
     for i, x in enumerate(data):
         yield max(u1 + b1, 0) if i >= 5 else x
@@ -36,26 +45,15 @@ def des(data, a=.2, b=.02, d=.9):
         b1 = smooth(i, b, u1 - u0, b1)
 
 
-def ewma(data, a=.2, b=.01):
-    wu = wd = 1
-    sl = sh = 0
-    for i, x in enumerate(data):
-        wd = smooth(i, b, abs(x - wu), wd)
-        wu = smooth(i, b, x, wu)
-        ts = wu / (wd * sqrt(a / (2 - a)))
-        sl = min((a * ts) + ((1 - a) * sl), 0)
-        sh = max((a * ts) + ((1 - a) * sh), 0)
-        yield max(sl, sh, key=abs)
-
-
 def ghf(data, g=.1, h=.01):
     """
     A baysian g-h filter for values in 'data', where 'g' is the scaling factor
     for the measurements and 'h' is the scaling factor for change in
     measurements. Both are expected to be 0 < g, h, < 1.
     """
-    g = min(max(g, 1e-6), 1 - 1e-6)
-    h = min(max(h, 1e-6), 1 - 1e-6)
+    n = len(data)
+    g = def_coef(g, 2 / sqrt(n))
+    h = def_coef(h, 2 / (n / 2 - 1))
     x1 = dx = 1
     for i, x0 in enumerate(data):
         yield x1 if i >= 5 else x0
@@ -69,7 +67,8 @@ def kfs(data, a=.05):
     Kalman filter smoother for values in 'data', where 'a' is a smoothing
     coefficient for updating the model.
     """
-    a = min(max(a, 1e-6), 1 - 1e-6)
+    n = len(data)
+    a = def_coef(a, 1 / sqrt(n))
     ev = pv = y = 1
     for i, x in enumerate(data):
         y = ((x * pv) + (y * ev)) / (pv + ev)
@@ -85,6 +84,8 @@ def ses(data, a=.1):
     'a' is the smoothing coefficient (0 <= a <= 1). Higher the value the
     faster the model updates.
     """
+    n = len(data)
+    a = def_coef(a, 3 / sqrt(n))
     y = 1
     for i, x in enumerate(data):
         yield y if i >= 5 else x

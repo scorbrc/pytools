@@ -49,7 +49,7 @@ def hws(dates, values, fc_n=None, sm_coef=None):
         a, b, g, d = sm_coef
     else:
         # Default level, trend, season and damper smoothing coefficients.
-        a = 2 / (day_n / 12 - 1)
+        a = 2 / (day_n / 8 - 1)
         b = 2 / (n / 2 - 1)
         g = (day_n * 2) / (n - 1)
         d = 1 - (1 / sqrt(day_n))

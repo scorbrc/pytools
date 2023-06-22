@@ -3,7 +3,9 @@ Testers for determining when a change has occurred in a series of values.
 """
 from bisect import bisect_left
 from math import sqrt
-from util.stat_utils import c4, mean, median, rs_test, std
+import numpy as np
+import scipy.stats as ss
+from util.stat_utils import c4
 from util.transform import to_sqrt_trans
 
 
@@ -50,10 +52,10 @@ def gti_scores(data, gp_n):
         gp.append(x)
         if len(gp) == gp_n:
             m0 = ts = 0
-            m1 = mean(gp)
-            sd = std(gp) / c4(gp_n)
+            m1 = np.mean(gp)
+            sd = np.std(gp) / c4(gp_n)
             if len(means) and sd > 0:
-                m0 = mean(means)
+                m0 = np.mean(means)
                 ts = min(max((m1 - m0) / (sd * 2), -6), 6)
             means.append(m1)
             gp = []
@@ -71,11 +73,11 @@ def grs_scores(data, gp_n):
     for x in data:
         gp.append(x)
         if len(gp) == gp_n:
-            median(gp)
+            np.median(gp)
             ts = 0
             if len(base) >= gp_n * 2:
-                median(base)
-                ts = rs_test(base, gp)
+                np.median(base)
+                ts = ss.ranksums(gp, base)[0]
             base.extend(gp)
             gp = []
             yield min(max(ts, -6), 6)
@@ -111,8 +113,8 @@ def ti_scores(data):
         stage.append(x)
         if len(stage) == ref_n:
             base.extend(stage)
-            mu = mean(base)
-            sd = std(base) / .6745
+            mu = np.mean(base)
+            sd = np.std(base) / .6745
             stage = []
         yield ts
 

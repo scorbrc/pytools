@@ -9,8 +9,9 @@ from util.changepoint import (
     ti_cpd_multi
 )
 from util.data_generator import gen_cycle
+from util.describer import describe
 from util.open_record import OpenRecord
-from util.stat_utils import describe, pct_diff
+from util.stat_utils import pct_diff
 from util.timer import Timer
 from util.util_tools import get_source_info
 

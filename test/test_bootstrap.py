@@ -1,13 +1,12 @@
 import unittest
 from random import expovariate, weibullvariate
+import numpy as np
+import scipy.stats as ss
 from util.bootstrap import repls, p_conf, t_conf
 from util.stat_utils import (
-    median,
-    mean,
     pct_diff,
     p90,
     trim_mean,
-    stderr,
     w_stderr
 )
 from util.timer import Timer
@@ -22,6 +21,9 @@ DATA2 = [0.12, 0.13, 0.13, 0.14, 0.15, 0.16, 0.2, 0.23, 0.33, 0.45, 0.53,
          0.66, 0.79, 0.9, 0.98, 1.16, 1.65, 1.72, 1.87, 2.01, 2.26, 2.34,
          2.42, 3.92, 5.29, 5.93, 6.5, 11.34, 11.76, 14.66, 16.25, 23.86,
          27.64, 71.82, 79.04]
+
+DATA3 = [0.39, 0.41, 0.51, 0.58, 0.64, 0.64, 0.84, 0.88, 0.97, 1.19, 2.23, 2.41,
+         2.44, 2.88, 3.0, 5.4, 7.97, 19.06, 21.85, 39.07]
 
 
 def gen_data(cr, sc, n):
@@ -47,7 +49,7 @@ class TestBootstrap(unittest.TestCase):
     def test_p_conf(self):
         print("-- %s(%d): %s --" % get_source_info())
         for data in (DATA1, DATA2):
-            for agg_fn in (median, mean, trim_mean):
+            for agg_fn in (np.median, np.mean, trim_mean):
                 l95s = []
                 u95s = []
                 l99s = []
@@ -61,9 +63,9 @@ class TestBootstrap(unittest.TestCase):
                     u99s.append(u99)
                 rpt = "%-10s %7.3f %7.3f %7.3f %7.3f" % \
                     (agg_fn.__name__,
-                     mean(l95s), mean(u95s), mean(l99s), mean(u99s))
-                self.assertTrue(mean(l99s) <= mean(l95s), rpt)
-                self.assertTrue(mean(u99s) >= mean(u95s), rpt)
+                     np.mean(l95s), np.mean(u95s), np.mean(l99s), np.mean(u99s))
+                self.assertTrue(np.mean(l99s) <= np.mean(l95s), rpt)
+                self.assertTrue(np.mean(u99s) >= np.mean(u95s), rpt)
 
     def test_p_conf_perf(self):
         print("-- %s(%d): %s --" % get_source_info())
@@ -81,14 +83,14 @@ class TestBootstrap(unittest.TestCase):
 
     def test_p_conf_range(self):
         print("-- %s(%d): %s --" % get_source_info())
-        count = 50
+        count = 100
         data_n = 100
         low_cr = .5
         mid_cr = 1
         high_cr = 2
         cp = .95
         sc = 1.1
-        for agg_fn in (median, mean, p90, trim_mean):
+        for agg_fn in (np.median, np.mean, p90, trim_mean):
             fp = fn = tp = tn = 0
             with Timer() as tm:
                 for _ in range(count):
@@ -133,7 +135,7 @@ class TestBootstrap(unittest.TestCase):
     def test_t_conf(self):
         print("-- %s(%d): %s --" % get_source_info())
         for data in (DATA1, DATA2):
-            for loc_fn, var_fn in ((mean, stderr), (trim_mean, w_stderr)):
+            for loc_fn, var_fn in ((np.mean, ss.sem), (trim_mean, w_stderr)):
                 l95s = []
                 u95s = []
                 l99s = []
@@ -147,9 +149,9 @@ class TestBootstrap(unittest.TestCase):
                     u99s.append(u99)
                 rpt = "%-10s %-10s %7.3f %7.3f %7.3f %7.3f" % \
                     (loc_fn.__name__, var_fn.__name__,
-                     mean(l95s), mean(u95s), mean(l99s), mean(u99s))
-                self.assertTrue(mean(l99s) <= mean(l95s), rpt)
-                self.assertTrue(mean(u99s) >= mean(u95s), rpt)
+                     np.mean(l95s), np.mean(u95s), np.mean(l99s), np.mean(u99s))
+                self.assertTrue(np.mean(l99s) <= np.mean(l95s), rpt)
+                self.assertTrue(np.mean(u99s) >= np.mean(u95s), rpt)
 
     def test_t_conf_exponential(self):
         print("-- %s(%d): %s --" % get_source_info())
@@ -158,12 +160,12 @@ class TestBootstrap(unittest.TestCase):
         upper = []
         for _ in range(200):
             data = [expovariate(1) for _ in range(30)]
-            mu = mean(data)
-            se = stderr(data)
+            mu = np.mean(data)
+            se = ss.sem(data)
             lower.append(mu - se * 2.75)
             upper.append(mu + se * 2.75)
-        lc1 = mean(lower)
-        uc1 = mean(upper)
+        lc1 = np.mean(lower)
+        uc1 = np.mean(upper)
 
         lower = []
         upper = []
@@ -172,8 +174,8 @@ class TestBootstrap(unittest.TestCase):
             lv, uv = t_conf(data, .99)
             lower.append(lv)
             upper.append(uv)
-        lc2 = mean(lower)
-        uc2 = mean(upper)
+        lc2 = np.mean(lower)
+        uc2 = np.mean(upper)
 
         lower = []
         upper = []
@@ -182,8 +184,8 @@ class TestBootstrap(unittest.TestCase):
             lv, uv = t_conf(data, .99, trim_mean, w_stderr)
             lower.append(lv)
             upper.append(uv)
-        lc3 = mean(lower)
-        uc3 = mean(upper)
+        lc3 = np.mean(lower)
+        uc3 = np.mean(upper)
 
         rpt = "lc1=%.3f uc1=%.3f lc2=%.3f uc2=%.3f lc3=%.3f uc3=%.3f" % \
               (lc1, uc1, lc2, uc2, lc3, uc3)
@@ -213,7 +215,7 @@ class TestBootstrap(unittest.TestCase):
         high_cr = 2
         cp = .95
         sc = 1.1
-        for loc_fn, sem_fn in ((mean, stderr), (trim_mean, w_stderr)):
+        for loc_fn, sem_fn in ((np.mean, ss.sem), (trim_mean, w_stderr)):
             fp = fn = tp = tn = 0
             with Timer() as tm:
                 for _ in range(count):

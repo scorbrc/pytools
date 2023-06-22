@@ -1,6 +1,6 @@
 import unittest
 from random import weibullvariate
-from util.stat_utils import describe
+from util.describer import describe
 from util.transform import (
     fr_sqrt_trans,
     fr_log_trans,

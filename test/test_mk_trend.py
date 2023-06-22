@@ -2,7 +2,7 @@ import unittest
 from util.data_generator import gen_flat
 from util.open_record import OpenRecord
 from util.mk_trend import mk_trend
-from util.stat_utils import describe
+from util.describer import describe
 from util.timer import Timer
 from util.util_tools import get_source_info
 

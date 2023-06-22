@@ -1,6 +1,7 @@
 from collections import defaultdict
+import numpy as np
 from util.open_record import OpenRecord
-from util.stat_utils import describe, mean
+from util.describer import describe
 
 
 class TestEvaluator:
@@ -68,6 +69,7 @@ class TestEvaluator:
         uc = sum([1 for x in self.tss[high] if x > maxv])
         eff = (lc + uc) / (len(self.tss[low]) + len(self.tss[high]))
 
+        ttd = np.mean(self.ttd) if len(self.ttd) else 0
         return OpenRecord(
             test_name=self.test_name,
             lp01=dss_ts[0].p005,
@@ -81,5 +83,5 @@ class TestEvaluator:
             tn=self.counts['tn'] / self.counts['ct'],
             fn=self.counts['fn'] / self.counts['ct'],
             eff=eff,
-            ttd=mean(self.ttd)
+            ttd=ttd
         )

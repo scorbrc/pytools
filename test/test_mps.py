@@ -1,14 +1,12 @@
 import unittest
+import numpy as np
 from random import choice, randint
 from util.data_generator import change, gen_cycle
 from test_evaluator import TestEvaluator
 from util.charts import chart
 from util.mps import mps
 from util.open_record import OpenRecord
-from util.stat_utils import (
-    fit,
-    mean
-)
+from util.stat_utils import fit
 from util.timer import Timer
 from util.util_tools import get_source_info
 
@@ -58,8 +56,8 @@ class TestMps(unittest.TestCase):
                                   dates[-day_n * 3:],
                                   (obs[-day_n * 3:], eps[-day_n * 3:]))
             rpt = eval.report()
-            rpt.mpe = mean(mpes)
-            rpt.mape = mean(mapes)
+            rpt.mpe = np.mean(mpes)
+            rpt.mape = np.mean(mapes)
             rpt.millis = tm.millis / (count * 3)
             self.assertTrue(abs(rpt.mpe) < 10, rpt)
             self.assertTrue(rpt.mape < 30, rpt)
