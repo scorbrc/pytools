@@ -159,7 +159,7 @@ def to_str(x, digits=3, max_len=120):
         return ('%%.%df' % digits) % x
     if isinstance(x, datetime):
         return x.isoformat()
-    if isinstance(x, (dict, list, tuple, Callable)):
+    if isinstance(x, (dict, list, set, tuple, Callable)):
         return ''
     return str(x)
 

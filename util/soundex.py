@@ -1,7 +1,8 @@
 
 
-SOUNDEX_DIGITS = {l:d for l, d in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                                      '01230120022455012623010202')}
+SOUNDEX_DIGITS = {l: d for l, d in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                       '01230120022455012623010202')}
+
 
 def soundex(word, size=4):
     """
@@ -15,7 +16,7 @@ def soundex(word, size=4):
     i = 1
     for ch in uword[1:]:
         dg = SOUNDEX_DIGITS[ch]
-        if dg != snd[i-1] and dg != '0':
+        if dg != snd[i - 1] and dg != '0':
             snd[i] = dg
             i += 1
             if i == size:

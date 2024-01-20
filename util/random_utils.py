@@ -1,11 +1,11 @@
 """ Random utility tools. """
 import datetime as dt
-import json
+from math import ceil
 from random import Random
 from string import digits, ascii_lowercase, ascii_uppercase
 from time import time
 from util.time_utils import to_utc
-from util.words import Words
+from util.words import words
 
 
 class RandomUtils:
@@ -19,12 +19,12 @@ class RandomUtils:
     B74_CHARS = B62_CHARS + PUNCT
     CHAR_TYPES = (digits, ascii_uppercase, ascii_lowercase, PUNCT)
 
-    def __init__(self, seed=None, fp="words/words_db.js"):
+    def __init__(self, seed=None):
         """
         Create a RandomUtils with it's own random generator seeded by 'seed',
         default current epoch time.
         """
-        self.__words = Words()
+        self.__words = []
         self.__rnd = Random(seed)
         self.__short_uid_seq = 0
 
@@ -34,7 +34,7 @@ class RandomUtils:
                        for _ in range(n_chars)])
 
     def b36(self, n_chars=10):
-        """ Generate random base 62 string 'n_chars' characters long, """
+        """ Generate random base 36 string 'n_chars' characters long, """
         return ''.join(self.__rnd.choices(RandomUtils.B36_CHARS, k=n_chars))
 
     def b62(self, n_chars=10):
@@ -69,14 +69,22 @@ class RandomUtils:
         for i in range(attempts):
             ws = [w.capitalize() for w in self.words(words_n)]
             n = n_chars - sum([len(w) for w in ws])
-            if n >= 2 and n <= 5:
+            if n >= 2 and n <= 4:
                 rx = self.comp_chars(n, (digits, RandomUtils.PUNCT))
-                return ''.join(self.__rnd.sample(ws + [rx], k=len(ws) + 1))
+                ws += [*rx]
+                self.__rnd.shuffle(ws)
+                return ''.join(ws)
         raise ValueError("Failed to build comp_words.")
 
-    def company_name(self):
-        """ Generate two word string as a company name. """
-        return self.join(self.words(2, "places"), camel=True)
+    def count(self, minv, midv, maxv, shape):
+        """
+        Generate a random integer no lower than 'minv', a midpoint
+        around 'midv' and no higher than 'maxv' and having 'shape'
+        (.25 <= shape <= 4) which will control the skew. Lower the value
+        the greater the skew, shape=1 is approximately exponential.
+        """
+        rn = self.__rnd.weibullvariate(midv, shape) * shape
+        return ceil(min(max(rn, minv), maxv))
 
     def date(self, min_date=None, max_date=None):
         """
@@ -94,19 +102,6 @@ class RandomUtils:
     def digits(self, n_chars=10):
         """ Generate 'n_chars' of random digits. """
         return ''.join([self.__rnd.choice(digits) for _ in range(n_chars)])
-
-    def email_address(self, pname=None, cname=None):
-        """
-        Generate an email address using personal name 'pname' and company
-        name 'cname' as firt.middle.last@company,com.
-        """
-        if pname is None:
-            pname = self.personal_name()
-        if cname is None:
-            cname = self.company_name()
-        email = '.'.join([n for n in pname if len(n)])
-        domain = "%s.com" % cname.lower()
-        return "%s@%s" % (email, domain)
 
     @staticmethod
     def int_to_b62(num):
@@ -127,23 +122,8 @@ class RandomUtils:
             wds = [w.capitalize() if k > 0 else w for k, w in enumerate(wds)]
         return delim.join(wds)
 
-    def personal_name(self):
-        """ Generate personal as (first, middle initial, last). """
-        fn = self.words(1, "first_names").capitalize()
-        ln = self.words(1, "last_names").capitalize()
-        mi = ''
-        if self.__rnd.random() < .9:
-            mi = self.__rnd.choice(ascii_uppercase)
-        return [fn, mi, ln]
-
-    def phone(self):
-        """ Generate a random telephone number. """
-        return "(%d%02d)%d%02d-%04d" % \
-               (self.__rnd.randint(2, 7),
-                self.__rnd.randint(0, 99),
-                self.__rnd.randint(1, 9),
-                self.__rnd.randint(0, 99),
-                self.__rnd.randint(0, 9999))
+    def random(self):
+        return self.__rnd
 
     def short_uid(self):
         """
@@ -161,37 +141,9 @@ class RandomUtils:
         chs = "%s%s%s" % ((self.b62(3), self.int_to_b62(ms), sq))
         return ''.join(self.__rnd.sample(chs, k=12))
 
-    def street_address(self):
-        """
-        Generate a street address as (number and street, city, state, zip).
-        """
-        rn = self.__rnd.random()
-        if rn < .85:
-            num = self.__rnd.randint(1, 100)
-        elif rn < .98:
-            num = self.__rnd.randint(1, 1000)
-        else:
-            num = self.__rnd.randint(1, 10000)
-        street = ' '.join(
-            [w.capitalize() for w in self.words(word_type='streets').split()])
-        city, state, zip = self.words(word_type='city_state_zips').split('|')
-        return ["%d %s" % (num, street),
-                city.capitalize(),
-                state.upper(),
-                zip]
-
-    def words(self, count=1, word_type=None):
-        """
-        Generate 'count' random words or type 'word_type', formatted in
-        camel case if 'camel' is True or with 'delim' as the separator.
-        """
-        if word_type is None:
-            wx = self.__words.get_words()
-        else:
-            wx = self.__words.get_words(word_type)
-        if count >= len(wx):
-            raise ValueError("Not enough values in %s." % word_type)
-        wds = self.__rnd.sample(wx, k=count)
+    def words(self, count=1):
+        """ Generate 'count' random words. """
+        wds = self.__rnd.sample(words, k=count)
         if count == 1:
             return wds[0]
         return wds
@@ -199,10 +151,35 @@ class RandomUtils:
 
 if __name__ == '__main__':
 
-    import sys
+    import argparse
 
-    size = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-    count = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "type",
+        action="store",
+        choices=(('chars', 'words')),
+        default='chars',
+        help="Type of random string to generate."
+    )
+    parser.add_argument(
+        "--size",
+        action='store',
+        type=int,
+        default=10,
+        help="Size of random string to generate."
+    )
+    parser.add_argument(
+        "--count",
+        action='store',
+        type=int,
+        default=10,
+        help="Number of random strings to generate."
+    )
+    args = parser.parse_args()
+
     ru = RandomUtils()
-    for _ in range(count):
-        print(ru.comp_chars(size))
+    for _ in range(args.count):
+        if args.type == 'chars':
+            print(ru.comp_chars(args.size))
+        else:
+            print(ru.comp_words(args.size))

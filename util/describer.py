@@ -5,7 +5,7 @@ from util.open_record import OpenRecord
 
 MAX_VALUES = 50000
 
-PERCENTILES = (0, .1, .5, 1, 5, 10, 25, 50, 75, 90, 95, 99, 99.5, 99.9, 100)
+PERCENTILES = (0, 1, 5, 10, 25, 50, 75, 90, 95, 99, 100)
 
 
 def describe(data, name='desc', full_pcts=False):
@@ -15,12 +15,11 @@ def describe(data, name='desc', full_pcts=False):
     n - number of values
     mu - arithmetic mean
     sd - standard deviation
-    cv - coefficient of variation: sd/mu
     kr - kurtosis
-    p00, p005 ... p50 ... p995, p100 are the percentiles.
+    p00, p01 ... p50 ... p95, p100 are the percentiles.
     """
     n = len(data)
-    ds = OpenRecord(name=name, n=n, mu=0, sd=0)
+    ds = OpenRecord(name=name, n=n, mu=0, sd=0, kr=0)
     pcts = PERCENTILES
     if not full_pcts:
         pcts = pcts[7:]
@@ -33,6 +32,7 @@ def describe(data, name='desc', full_pcts=False):
         try:
             ds.mu = np.mean(data)
             ds.sd = np.std(data, ddof=1)
+            ds.kr = ss.kurtosis(data)
             for p, v in zip(pcts, np.percentile(data, pcts)):
                 if isinstance(p, int):
                     ds['p%02d' % p] = v

@@ -28,9 +28,10 @@ def to_text_cols(records, digits=3, max_len=80, indent=0, colnames=None):
                        ' '.join([cn.rjust(max_len) for cn in colnames])),
                       file=so)
         row = [cr[fn].rjust(ln) for ln, cr in zip(col_lens, cv_recs)]
-        print("%s%s %s" %
-              (' '.ljust(indent), fn.ljust(fn_len), ' '.join(row)),
-              file=so)
+        if sum([len(x.strip()) for x in row]):
+            print("%s%s %s" %
+                  (' '.ljust(indent), fn.ljust(fn_len), ' '.join(row)),
+                  file=so)
     return so.getvalue().rstrip()
 
 
@@ -64,14 +65,14 @@ def to_text_rows(records, digits=3, max_len=80, indent=0):
 
     # Build the report.
     so = io.StringIO()
+    so.write(' ' * indent)
+    for j, fn in enumerate(fld_lens):
+        if j > 0:
+            so.write(' ')
+        so.write(fn.ljust(fld_lens[fn]))
+    print(file=so)
     for i, cr in enumerate(cv_recs):
         so.write(' ' * indent)
-        if i == 0:
-            for j, fn in enumerate(fld_lens):
-                if j > 0:
-                    so.write(' ')
-                so.write(fn.ljust(fld_lens[fn]))
-            print(file=so)
         for j, fn in enumerate(fld_lens):
             if j > 0:
                 so.write(' ')

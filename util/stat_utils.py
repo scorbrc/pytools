@@ -1,13 +1,24 @@
 """
 Statistical utility functions.
 """
-from bisect import bisect_left
 from collections import defaultdict
 import datetime as dt
 from math import ceil, copysign, exp, floor, sqrt
 import numpy as np
-from .open_record import OpenRecord
 from .util_tools import zero_if_none
+
+
+def adjust_mean(data, mu, prec=.01):
+    """ Adjust values in 'data' to mean 'mu' with precision 'prec'. """
+    adj_data = [x for x in data]
+    for i in range(30):
+        m1 = np.mean(adj_data)
+        df = mu - m1
+        pd = abs(df / ((mu + m1) / 2))
+        if pd <= prec:
+            break
+        adj_data = [x + df for x in adj_data]
+    return adj_data
 
 
 def arl(k, h):
@@ -18,6 +29,42 @@ def arl(k, h):
 def c4(n):
     """ Correction for small sample sizes as used in control charting. """
     return (4 * max(n, 2) - 4) / (4 * max(n, 2) - 3)
+
+
+def describe(values, pcts=(1, 5, 10, 25, 50, 75, 90, 95, 99)):
+    """
+    Descriptive statistics for 'values':
+      n: number of values
+      mu: arithmetic mean
+      sd: sample standard deviation
+      kr: kurtosis as a measure of distribution
+      min: minimum Value
+      p01..p99: percentiles as defined in 'pcts'
+      max: maximum value
+    """
+    n = len(values)
+    if n < 3:
+        raise ValueError("Need at least three values.")
+    xs = sorted(values)
+    desc = dict(n=n, mu=sum(values) / n, sd=0, kr=0, min=xs[0])
+    ks = ss = 0
+    for x in xs:
+        dx = x - desc['mu']
+        ks += dx ** 4
+        ss += dx ** 2
+    if ss > 0:
+        desc['sd'] = sqrt(ss / (n - 1))
+    if ks > 0 and desc['sd'] > 0:
+        desc['kr'] = (ks / ((desc['sd'] ** 4) * (n - 1))) - 3
+    for pct in sorted(pcts):
+        r = ((n - 1) * (float(pct) / 100))
+        i = int(r)
+        pv = xs[i]
+        if i < n and r - i > 0:
+            pv = xs[i] + ((xs[i + 1] - xs[i]) * (r - i))
+        desc['p%02d' % pct] = pv
+    desc['max'] = xs[-1]
+    return desc
 
 
 def fit(obs, eps):
@@ -31,7 +78,7 @@ def fit(obs, eps):
     if not isinstance(eps, (list, tuple)):
         eps = [eps] * len(obs)
     try:
-        for i, (x, y) in enumerate(zip(obs, eps)):
+        for x, y in zip(obs, eps):
             pcd = pct_diff(x, y)
             mape += abs(pcd)
             mpe += pcd

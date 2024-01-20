@@ -1,18 +1,7 @@
-"""
-Provides a layer over Postgres using pyscopg2 connection pooling. The
-Database class maintains the connection pool and is thread-safe. The
-DatabaseConnection uses a connection from the pool to do database operaions
-and is not thread-safe.
-"""
-from collections import defaultdict
+""" Context-aware datasbase client using pyscopg2 connection pooling. """
 from contextlib import contextmanager
 import logging
 import psycopg2.pool as pp
-from time import perf_counter
-from threading import Lock
-from util.describer import Describer
-from util.open_record import OpenRecord
-from util.timer import Timer
 
 MIN_CONNECTIONS = 2
 MAX_CONNECTIONS = 20
@@ -21,12 +10,12 @@ MAX_CONNECTIONS = 20
 class DatabaseError(Exception):
     """Wrapper exception for database errors."""
 
-    def __init__(self, sql, params=[], root_ex=None):
+    def __init__(self, sql, params=[], msg=None):
         self.message = "'%s'" % sql
         if len(params):
             self.message += ": %s" % params
-        if root_ex is not None:
-            self.message += " due to %s" % root_ex
+        if msg is not None:
+            self.message += " due to %s" % msg
 
     def __str__(self):
         return self.message
@@ -34,41 +23,40 @@ class DatabaseError(Exception):
 
 class Database:
     """
-    Provides a pool of connections to a database. Two layers of context
-    management. First layer opens and closes the connection pool. Second layer
-    borrows a connection (DatabaseConnection) that will be returned to the pool.
+    Context-aware datasbase client using pyscopg2 connection pooling. The
+    Database class maintains the connection pool and is thread-safe. The
+    DatabaseConnection uses a connection from the pool and is not thread-safe.
+    Any updates will be made in a single transaction committed when the
+    connection is returned to the pool.
 
     Example:
 
-        with Database(user, pwd, dbname) as db:
-            with db.connection() as dbconn:
-                # user the dbconn to query and update database
+    with Database(DBNAME, DBUSER) as db:
+        with db.connection() as conn:
+            # use conn
+        # Commit any updates.
     """
 
-    def __init__(self, user, password, database,
+    def __init__(self, dbname, user,
+                 password=None,
                  host="127.0.0.1",
                  port="5432",
                  min_conns=MIN_CONNECTIONS,
                  max_conns=MAX_CONNECTIONS):
         """
         Create Database with 'user' as user name with 'password', connecting
-        to 'database' name running on 'host' and 'port'. Connection pool will
+        to 'dbname' name running on 'host' and 'port'. Connection pool will
         maintain minimum of 'min_conns' (default 2) and maximum of 'max_conns'
         (default 20) connections.
         """
         self.__user = user
-        self.__database = database
+        self.__dbname = dbname
         self.__user = user
         self.__password = password
         self.__host = host
         self.__port = port
         self.__min_conns = min_conns
         self.__max_conns = max_conns
-        self.__in_use = 0
-        self.__max_in_use = 0
-        self.__desc = {}
-        self.__lock = Lock()
-        self.__start_time = perf_counter()
 
     def __enter__(self):
         """ Start the connection pool. """
@@ -79,7 +67,7 @@ class Database:
             password=self.__password,
             host=self.__host,
             port=self.__port,
-            database=self.__database)
+            dbname=self.__dbname)
         logging.info("Started pool with %d connections.", self.__min_conns)
         return self
 
@@ -91,62 +79,26 @@ class Database:
     @contextmanager
     def connection(self):
         """
-        Produce a connection that will be yielded to the client and
-        closed when the block exits.
+        Produce a connection that will be yielded to the client and closed
+        when the block exits.
         """
         conn = self.__conn_pool.getconn()
-        with self.__lock:
-            self.__in_use += 1
-            self.__max_in_use = max(self.__max_in_use, self.__in_use)
         dbconn = DatabaseConnection(conn)
         try:
+            logging.info("Yield connection %s", id(dbconn))
             yield dbconn
         finally:
-            dbconn.close()
-            with self.__lock:
-                # Gather timers and add to the describers.
-                for k, v in dbconn.get_timers().items():
-                    self.__desc.setdefault(k, Describer(k))
-                    for x in v:
-                        self.__desc[k].add(x)
-            # Return the connection.
-            self.__conn_pool.putconn(dbconn.get_conn())
-            self.__in_use -= 1
-
-    def describe(self):
-        """
-        Latency descriptive statistics for each type of reqquest.
-        """
-        dss = []
-        with self.__lock:
-            for d in self.__desc.values():
-                ds = d.describe()
-                ds.rps = ds.n / (perf_counter() - self.__start_time)
-                dss.append(ds)
-        return dss
-
-    def __str__(self):
-        return "Database(user='%s',database=%s,in_use=%d,max_in_use=%d)" % \
-            (self.__user,
-             self.__database,
-             self.__in_use,
-             self.__max_in_use)
+            logging.info("Release connection %s", id(dbconn))
+            self.__conn_pool.putconn(dbconn.release())
 
 
 class DatabaseConnection:
-    """
-    Represents a connection borrowed from the pool.
-    """
+    """ A connection borrowed from the pool. """
 
     def __init__(self, conn):
-        """ Create a DatabaseConnection with 'conn' connecting to the database. """
+        """ Create a DatabaseConnection with 'conn' connected to the database. """
         self.__conn = conn
         self.__cursor = conn.cursor()
-        self.__timers = defaultdict(list)
-
-    def close(self):
-        """ Close database cursor. """
-        self.__cursor.close()
 
     def callproc(self, procname, *params):
         """
@@ -155,56 +107,53 @@ class DatabaseConnection:
         procedure.
         """
         try:
-            logging.debug("callproc: %s(%s)", procname, params)
-            with Timer() as tm:
-                result = self.__cursor.callproc(procname, params)
-            self.__timers[procname].append(tm.millis)
-            return result
+            logging.debug("%s: callproc: %s(%s)",
+                          id(self.__conn), procname, params)
+            return self.__cursor.callproc(procname, params)
         except Exception as ex:
-            raise DatabaseError(procname, params, ex)
+            raise DatabaseError(procname, params) from ex
 
-    def commit(self):
+    def execute(self, sql, *params):
+        """ Execute 'sql' with optional 'params'. Return rows affected. """
+        ct = 0
+        try:
+            logging.debug("%s: update %s: %s", id(self.__conn), sql, params)
+            self.__cursor.execute(sql, params)
+            return self.__cursor.rowcount
+        except Exception as ex:
+            self.__conn.rollback()
+            raise DatabaseError(sql, params) from ex
+        return ct
+
+    def insert(self, tbl, rec):
         """
-        Commit updates done on the connection or in the database using
-        a function or procedure. Functions automatically commit but the
-        invoking connection will not see the changes until it is committed
-        if read-committed transaction isolation is being used (the default).
+        Insert dictionary record 'rec', where keys are column names,
+        into table 'tbl'.
         """
-        logging.debug("Commit")
-        self.__conn.commit()
-
-    def get_conn(self):
-        """ Return underlying connection. """
-        return self.__conn
-
-    def get_timers(self):
-        """ Latency timers. """
-        return self.__timers
+        sql = f"INSERT INTO {tbl} ("
+        sql += ','.join([fn for fn in rec])
+        sql += ") VALUES ("
+        sql += ','.join(['%s' for _ in rec])
+        sql += ")"
+        return self.execute(sql, *list(rec.values()))
 
     def query(self, sql, *params):
-        """
-        Run query 'sql' with zero or more 'params' and return results as
-        OpenRecords.
-        """
+        """ Run query 'sql' with zero or more 'params', generating records. """
         try:
-            with Timer() as tm:
-                records = []
-                logging.debug("query: %s: %s", sql, params)
-                self.__cursor.execute(sql, params)
-                names = [x[0] for x in self.__cursor.description]
-                for row in self.__cursor:
-                    records.append(OpenRecord(zip(names, row)))
-            self.__timers['query'].append(tm.millis)
-            return records
+            logging.debug("%s: query: %s: %s", id(self.__conn), sql, params)
+            self.__cursor.execute(sql, params)
+            names = [x[0] for x in self.__cursor.description]
+            for row in self.__cursor:
+                yield dict(zip(names, row))
         except Exception as ex:
-            raise DatabaseError(sql, params, ex)
+            raise DatabaseError(sql, params) from ex
 
     def query_many(self, sql, *params):
         """
-        Run query 'sql' with zero or more 'params', returning a sequence of
-        records.
+        Run query 'sql' with zero or more 'params', where each param needs
+        placeholder '%s' in 'sql', returning zero to many records.
         """
-        return self.query(sql, params)
+        return list(self.query(sql, params))
 
     def query_one(self, sql, *params):
         """
@@ -212,39 +161,41 @@ class DatabaseConnection:
         or None if no results. Raises DatabaseError if more than one
         record returned.
         """
-        x = self.query(sql, params)
+        x = list(self.query(sql, params))
         if len(x) > 1:
-            raise DatabaseError("Multiple records found with %s" % sql, params)
+            raise DatabaseError(sql, params, "Expected only one record.")
         if not len(x):
             return None
         return x[0]
 
-    def rollback(self):
-        """ Rollback any updates not yet committed. """
-        self.__conn.rollback()
+    def release(self):
+        """
+        Release this connection, committing any open transactions and
+        closing the cursor, returning the connection.
+        """
+        self.__conn.commit()
+        self.__cursor.close()
+        self.__cursor = None
+        return self.__conn
 
-    def update(self, sql, *params):
+    def run(self, script):
+        """ Run 'script', which can have multiple statements separate by ';'. """
+        logging.debug("%s: run %s", id(self.__conn), script)
+        while len(script):
+            sql, _, script = script.partition(';')
+            if len(sql.strip()):
+                self.execute(sql.strip())
+
+    def update(self, tbl, rec, keyfields):
         """
-        Execute update 'sql' with optional 'params'. Return rows affected.
+        Update table 'tbl' with dictionary record 'rec' with keys that
+        match column names. 'keyfields' is a list of fields to consider as
+        keys, simple equivalenced used in the where clause.
         """
-        ct = 0
-        try:
-            logging.debug("update %s: %s", sql, params)
-            with Timer() as tm:
-                if isinstance(sql, str):
-                    self.__cursor.execute(sql, params)
-                    ct += self.__cursor.rowcount
-                elif isinstance(sql, list):
-                    for s in sql:
-                        self.__cursor.execute(s)
-                        ct += self.__cursor.rowcount
-                else:
-                    raise DatabaseError("Invalid sql type '%s'" % type(sql))
-            oper = sql.strip().partition(' ')[0]
-            self.__timers[oper].append(tm.millis)
-        except Exception as ex:
-            self.__conn.rollback()
-            dberr = DatabaseError(sql, params, ex)
-            logging.warning("Rolled-back: %s", dberr)
-            raise dberr
-        return ct
+        sql = f"UPDATE {tbl} SET "
+        sql += ','.join([f"{fn}=%s" for fn in rec if fn not in keyfields])
+        sql += " WHERE "
+        sql += ' AND '.join([f"{fn}=%s" for fn in rec if fn in keyfields])
+        params = [fv for fn, fv in rec.items() if fn not in keyfields]
+        params += [fv for fn, fv in rec.items() if fn in keyfields]
+        return self.execute(sql, *params)

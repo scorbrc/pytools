@@ -1,15 +1,15 @@
 """
-Time utility tools that aim to parse any date/time into either a
-local time or a UTC time.
+Time utility tools that bring together a few different Python libraries
+(dateutil.parser, datautil.tz and pytz) with the aim of parsing any datetime
+or string formated date/time into into either a local time or a UTC time with
+a correctly offset timezone.
 """
 import datetime as dt
 import dateutil.parser as dp
 from dateutil import tz
 import pytz
-from dateutil.relativedelta import relativedelta
 
-
-DAY_SECS = 60 * 60 * 24
+TODAY = dt.date.today()
 
 # Build a timezone map that includes daylight savings time-zones.
 TZ_MAP = {}
@@ -23,28 +23,8 @@ for zone in pytz.all_timezones:
             TZ_MAP[tzdate.tzname()] = tz.gettz(zone)
         except pytz.NonExistentTimeError:
             pass
-
-# Local timezone
+# The local timezone.
 TZ_LOCAL = dt.datetime.now(dt.timezone.utc).astimezone().tzinfo
-
-
-def days_from_month(dt):
-    """
-    Calculates numbers of days from beginning of the month and to the
-    end of the month for 'point_dt'. Examples:
-    days_from_month(dp.parse('2014-04-01'))
-    >(0, 30)
-    days_from_month(dp.parse('2014-04-02'))
-    >(1, 29)
-    days_from_month(dp.parse('2014-04-30'))
-    >(29, 1)
-    """
-    dt = to_utc(dt)
-    start_day = to_utc(dt.strftime('%Y-%m-01'))
-    end_day = to_utc(
-        (dt + relativedelta(months=1)).strftime('%Y-%m-01'))
-    return (int((dt - start_day).total_seconds() / DAY_SECS),
-            int((end_day - dt).total_seconds() / DAY_SECS))
 
 
 def is_local(d):
@@ -65,18 +45,14 @@ def is_utc(d):
     return is_tz_aware(d) and d.strftime('%Z') == to_utc().strftime('%Z')
 
 
-def last_day_in_week(date):
-    """ Finds the last day in week for 'date'. """
-    dx = to_utc(date)
-    d0 = dx.replace(hour=0, minute=0, second=0, microsecond=0)
-    wk = dx.strftime('%Y-%W')
-    td = dt.timedelta(days=1)
-    for i in range(1, 8):
-        d1 = d0 + td
-        if d1.strftime('%Y-%W') != wk:
-            return d0
-        d0 = d1
-    return d0
+def parse(ds):
+    """ Parse date/time string 'ds' into a datetime. """
+    try:
+        # Try faster ISO parsing.
+        return dt.datetime.fromisoformat(ds)
+    except ValueError:
+        # Try the slower parsing for any date/time string.
+        return dp.parse(ds, tzinfos=TZ_MAP)
 
 
 def to_local(d=None):
@@ -87,8 +63,10 @@ def to_local(d=None):
     no timezone then assume the date as given is local.
     """
     if d is not None:
-        if not isinstance(d, dt.datetime):
-            d = dp.parse(d, tzinfos=TZ_MAP)
+        if isinstance(d, str):
+            d = parse(d)
+        elif not hasattr(d, 'second'):
+            d = dt.datetime.combine(d, dt.time())
         if is_tz_aware(d):
             dz = dt.datetime(d.year, d.month, d.day)
             return d.astimezone(dz.tzinfo)
@@ -105,30 +83,12 @@ def to_utc(d=None):
     timezone then assume the date as given is UTC.
     """
     if d is not None:
-        if not isinstance(d, dt.datetime):
-            d = dp.parse(d, tzinfos=TZ_MAP)
+        if isinstance(d, str):
+            d = parse(d)
+        elif not hasattr(d, 'second'):
+            d = dt.datetime.combine(d, dt.time())
         if is_tz_aware(d):
             return d.astimezone(tz.tzutc())
         else:
             return d.replace(tzinfo=dt.timezone.utc)
     return dt.datetime.now(dt.timezone.utc)
-
-
-def truncate_to_day(d):
-    """ Truncate datetome 'd' to day granularity. """
-    return d.replace(hour=0, minute=0, second=0, microsecond=0)
-
-
-def truncate_to_hour(d):
-    """ Truncate datetome 'd' to hour granularity. """
-    return d.replace(minute=0, second=0, microsecond=0)
-
-
-def truncate_to_minute(d):
-    """ Truncate datetome 'd' to minute granularity. """
-    return d.replace(second=0, microsecond=0)
-
-
-def truncate_to_second(d):
-    """ Truncate datetome 'd' to minute granularity. """
-    return d.replace(microsecond=0)

@@ -8,7 +8,6 @@ from collections import namedtuple
 from subprocess import run
 import sys
 
-
 Source = namedtuple('Source', ('file', 'line', 'char', 'err', 'msg'))
 
 
@@ -46,7 +45,7 @@ def run_autopep8(sources):
 
 def run_autoflake(sources):
     """
-    Run autoflake code cleaner on source modules in-place. THis will remove
+    Run autoflake code cleaner on source modules in-place. This will remove
     unused imports and variables.
     """
     for fp in sorted(sources):

@@ -4,26 +4,12 @@ OpenRecord is a mutable ordered dictionary with methods for attributes.
 from collections import OrderedDict
 from copy import deepcopy
 import csv
-import datetime as dt
 import io
 import json
 import sys
 import types
-from .text_fmt import to_text_cols, to_text_rows
-from .util_tools import to_str
-
-
-def to_safe_json(x):
-    """ Convert 'x' to field type safe to output as JSON. """
-    if isinstance(x, dict):
-        return OrderedDict(
-            [(key, to_safe_json(val)) for key, val in x.items()])
-    elif isinstance(x, (list, tuple, set)) or 'ndarray' in str(type(x)):
-        return [to_safe_json(elem) for elem in x]
-    elif isinstance(x, dt.datetime):
-        return x.isoformat()
-    else:
-        return x
+from util.text_fmt import to_text_cols, to_text_rows
+from util.util_tools import to_safe_json, to_snake_name, to_str
 
 
 class OpenRecord(OrderedDict):
@@ -64,6 +50,10 @@ class OpenRecord(OrderedDict):
             k1 = repr(other)
             rslt = -1 if k0 < k1 else 1 if k0 > k1 else 0
         return rslt
+
+    def copy(self):
+        """ Copy the record. """
+        return deepcopy(self)
 
     def __eq__(self, other): return self.__cmp(other) == 0
     def __ge__(self, other): return self.__cmp(other) >= 0
@@ -109,7 +99,7 @@ class OpenRecord(OrderedDict):
 
     def __str__(self):
         """ Return string report of the record. """
-        return self.to_pretty_json()
+        return OpenRecord.to_text_cols(self)
 
     def select(self, fields, exclude=False):
         """ Produce a new record with only 'fields' selected if 'exclude'
@@ -129,32 +119,43 @@ class OpenRecord(OrderedDict):
         """ Generate formatted JSON from the record. """
         return json.dumps(to_safe_json(self), indent=4)
 
-    @classmethod
-    def create_from_csv(cls, src):
+    @staticmethod
+    def from_cursor(src):
+        """ Create records from DBI cursor 'src'. """
+        records = []
+        names = [to_snake_name(x[0]) for x in src.description]
+        for row in src:
+            records.append(OpenRecord(zip(names, row)))
+        return records
+
+    @staticmethod
+    def from_csv(src):
         """ Create records from CSV 'src', a file handler or string. """
         recs = []
         if hasattr(src, 'fileno'):
             src = src.read()
         else:
-            with open(src) as fi:
-                src = fi.read()
+            try:
+                with open(src) as fi:
+                    src = fi.read()
+            except OSError:
+                pass
         sniffer = csv.Sniffer()
-        reader = csv.reader(io.StringIO(src))
+        dialect = sniffer.sniff(src)
+        reader = csv.reader(io.StringIO(src), dialect=dialect)
         names = []
         for row in reader:
             if not len(names):
                 if sniffer.has_header(src):
-                    names = row
-                    # for x in row:
-                    #    names.append(x.replace('\ufeff', ''))
+                    names = [to_snake_name(fn) for fn in row]
                 else:
                     names = ['fld_%02d' % (i + 1) for i in range(len(row))]
             else:
                 recs.append(OpenRecord(zip(names, row)))
         return recs
 
-    @classmethod
-    def create_from_json(cls, src):
+    @staticmethod
+    def from_json(src):
         """
         Create records from JSON 'src', which can be a file or string. The JSON
         can be a single object, list of objects or a separate JSON per line.
@@ -175,11 +176,11 @@ class OpenRecord(OrderedDict):
                     return [OpenRecord(rec) for rec in src_recs]
                 return OpenRecord(src_recs)
         except TypeError:
-            return [OpenRecord.create_from_json(x) for x in src]
+            return [OpenRecord.from_json(x) for x in src]
         return None
 
-    @classmethod
-    def normalize(cls, records, default_value=None):
+    @staticmethod
+    def normalize(records, default_value=None):
         """ Ensure that all 'records' have the same superset of fields. """
         names = []
         for rec in records:
@@ -195,8 +196,8 @@ class OpenRecord(OrderedDict):
             nrecs.append(nrec)
         return nrecs
 
-    @classmethod
-    def to_csv(cls, records, fo=sys.stdout):
+    @staticmethod
+    def to_csv(records, fo=sys.stdout):
         """ Generate CSV for 'records' writen to 'fo'. """
         if len(records) > 0:
             wrt = csv.writer(fo)
@@ -204,8 +205,8 @@ class OpenRecord(OrderedDict):
             for rec in records:
                 wrt.writerow([to_str(x) for x in rec.values()])
 
-    @classmethod
-    def to_text_cols(cls, records, digits=3, max_len=80, indent=0):
+    @staticmethod
+    def to_text_cols(records, digits=3, max_len=80, indent=0):
         """
         Formats 'records' into text columns. Records are laid out
         in columns with the first column being the field name. 'digits'
@@ -215,8 +216,8 @@ class OpenRecord(OrderedDict):
         """
         return to_text_cols(records, digits, max_len, indent)
 
-    @classmethod
-    def to_text_rows(cls, records, digits=3, max_len=80, indent=0):
+    @staticmethod
+    def to_text_rows(records, digits=3, max_len=80, indent=0):
         """
         Formats 'records' into evenly spaced text rows. 'digits'
         specifies precison for floating or decimal fields. 'max_len' is the

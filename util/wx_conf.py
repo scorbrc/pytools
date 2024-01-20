@@ -27,8 +27,4 @@ def wx_conf(data, cf=.99, prec=.001, max_iters=25):
         if abs((uc1 - uc0) / ((uc1 + uc0) / 2)) <= prec:
             break
 
-
-
-
-
     return lc1, uc1

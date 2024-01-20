@@ -1,6 +1,7 @@
 import datetime as dt
 import unittest
 import string
+from util.describer import describe
 from util.random_utils import RandomUtils
 from util.timer import Timer
 from util.time_utils import to_utc
@@ -13,14 +14,6 @@ class RandomUtilsTest(unittest.TestCase):
         print("-- %s(%d): %s --" % get_source_info())
         ru = RandomUtils()
         self.assertEqual('HcutVS', ru.int_to_b62(39578292712))
-
-    def test_random_address(self):
-        print("-- %s(%d): %s --" % get_source_info())
-        ru = RandomUtils()
-        for _ in range(10):
-            addr = ru.street_address()
-            self.assertTrue(addr[0].partition(' ')[0].isdigit())
-            self.assertTrue(addr[-1].isdigit())
 
     def test_base_random_chars(self):
         print("-- %s(%d): %s --" % get_source_info())
@@ -73,6 +66,26 @@ class RandomUtilsTest(unittest.TestCase):
                 x = ru.comp_words(n)
                 self.assertEqual(n, len(x))
 
+    def test_count1(self):
+        print("-- %s(%d): %s --" % get_source_info())
+        ru = RandomUtils()
+        counts = [ru.count(1, 2, 10, 1) for _ in range(2000)]
+        ds = describe(counts, full_pcts=True)
+        self.assertEqual(1, ds.p00, ds)
+        self.assertEqual(2, ds.p50, ds)
+        self.assertTrue(ds.p95 >= 6, ds)
+        self.assertEqual(10, ds.p100, ds)
+
+    def test_count2(self):
+        print("-- %s(%d): %s --" % get_source_info())
+        ru = RandomUtils()
+        counts = [ru.count(1, 2, 10, .5) for _ in range(2000)]
+        ds = describe(counts, full_pcts=True)
+        self.assertEqual(1, ds.p00, ds)
+        self.assertEqual(1, ds.p50, ds)
+        self.assertTrue(ds.p95 >= 9, ds)
+        self.assertEqual(10, ds.p100, ds)
+
     def test_date(self):
         print("-- %s(%d): %s --" % get_source_info())
         ru = RandomUtils()
@@ -80,28 +93,6 @@ class RandomUtilsTest(unittest.TestCase):
         self.assertTrue(
             d1 > to_utc() - dt.timedelta(seconds=60 * 60 * 24 * 30))
         self.assertTrue(d1 <= to_utc())
-
-    def test_email_address(self):
-        print("-- %s(%d): %s --" % get_source_info())
-        ru = RandomUtils()
-        email = ru.email_address()
-        self.assertTrue(len(email))
-        self.assertTrue('@' in email)
-        pname = ru.personal_name()
-        email = ru.email_address(pname)
-        self.assertTrue(pname[0] in email)
-        cname = ru.company_name()
-        email = ru.email_address(cname=cname)
-        self.assertTrue(cname.lower() in email,
-                        "Expected %s in %s" % (cname.lower(), email))
-
-    def test_phone(self):
-        print("-- %s(%d): %s --" % get_source_info())
-        ru = RandomUtils()
-        phone = ru.phone()
-        self.assertEqual(13, len(phone))
-        self.assertTrue(
-            phone.replace('(', '').replace(')', '').replace('-', '').isdigit())
 
     def test_seeding(self):
         print("-- %s(%d): %s --" % get_source_info())

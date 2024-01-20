@@ -153,6 +153,13 @@ class TestBootstrap(unittest.TestCase):
                 self.assertTrue(np.mean(l99s) <= np.mean(l95s), rpt)
                 self.assertTrue(np.mean(u99s) >= np.mean(u95s), rpt)
 
+    def test_t_conf2(self):
+        print("-- %s(%d): %s --" % get_source_info())
+        data = [.14, .57, 1.438, 1.55, 1.923, 1.714, 2.193, 5.582, 11.62, 15.31, 23.47]
+        for _ in range(20):
+            lv, uv = t_conf(data, .95)
+            print(lv, uv)
+
     def test_t_conf_exponential(self):
         print("-- %s(%d): %s --" % get_source_info())
 

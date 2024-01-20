@@ -66,7 +66,7 @@ def t_conf(data, cp=.99, loc_fn=np.mean, var_fn=ss.sem):
     cp = min(max(cp, 1e-6), 1 - 1e-6)
     lc = uc = 0
     if len(set(data)) >= 5:
-        repl_n = repls(len(data), 30, 1000)
+        repl_n = 1000  # repls(len(data), 30, 1000)
         u0 = loc_fn(data)
         s0 = var_fn(data)
         tss = []
